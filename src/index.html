@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>JavaScript Sandbox</title>
+    <meta charset="UTF-8" />
+  </head>
+
+  <body>
+    <div id="app"></div>
+
+    <script src="./index.mjs" type="module"></script>
+  </body>
+</html>
+// Quantum Fire AI - Full App (Basic MVP Version)
+// Built with HTML, CSS, JavaScript + OpenAI API integration
+// Note: You must replace 'YOUR_API_KEY' with a valid OpenAI key
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Quantum Fire AI</title>
+  <style>
+    body { font-family: Arial; background: #121212; color: white; text-align: center; }
+    .chatbox { max-width: 700px; margin: auto; padding: 20px; background: #1e1e1e; border-radius: 10px; }
+    textarea { width: 100%; height: 100px; border-radius: 10px; padding: 10px; font-size: 16px; }
+    button { padding: 10px 20px; font-size: 16px; border-radius: 5px; margin-top: 10px; cursor: pointer; }
+    .output { white-space: pre-wrap; text-align: left; margin-top: 20px; background: #252525; padding: 10px; border-radius: 10px; }
+  </style>
+</head>
+<body>
+  <h1>🔥 Quantum Fire AI 🔥</h1>
+  <div class="chatbox">
+    <textarea id="userInput" placeholder="Type your message here..."></textarea><br>
+    <button onclick="askAI()">Ask AI</button>
+    <div class="output" id="response"></div>
+  </div>
+
+  <script>
+    async function askAI() {
+      const input = document.getElementById('userInput').value;
+      const output = document.getElementById('response');
+
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer YOUR_API_KEY"
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [{ role: "user", content: input }]
+        })
+      });
+
+      const data = await response.json();
+      output.innerText = data.choices[0].message.content;
+    }
+  </script>
+</body>
+</html>
+ai-chat-app/
+├── backend/
+│   └── server.js           # Handles API requests to OpenAI
+├── frontend/
+│   ├── public/
+│   └── src/
+│       ├── App.jsx         # Main React component
+│       └── ChatBox.jsx     # Chat UI
+├── .env                    # API keys
+├── package.json
+└── README.md
+const express = require('express');
+const cors = require('cors');
+const { Configuration, OpenAIApi } = require('openai');
+
+require('dotenv').config();
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const openai = new OpenAIApi(new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+}));
+
+app.post('/chat', async (req, res) => {
+  try {
+    const { message } = req.body;
+    const response = await openai.createChatCompletion({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: message }],
+    });
+    res.json({ reply: response.data.choices[0].message.content });
+  } catch (error) {
+    res.status(500).send(error.toString());
+  }
+});
+
+app.listen(5000, () => console.log('Server running on port 5000'));
+npx create-react-app frontend
+cd frontend
+npm install axios
+import React, { useState } from 'react';
+import axios from 'axios';
+
+function App() {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+
+  const sendMessage = async () => {
+    const res = await axios.post('http://localhost:5000/chat', { message: input });
+    setMessages([...messages, { user: input }, { ai: res.data.reply }]);
+    setInput('');
+  };
+
+  return (
+    <div style={{ padding: 20 }}>
+      <h1>NeuraTalk Chat</h1>
+      <div>
+        {messages.map((msg, i) =>
+          <p key={i}><strong>{msg.user ? "You" : "AI"}:</strong> {msg.user || msg.ai}</p>
+        )}
+      </div>
+      <input value={input} onChange={e => setInput(e.target.value)} />
+      <button onClick={sendMessage}>Send</button>
+    </div>
+  );
+}
+
+export default App;
+cd backend
+node server.js
+cd frontend
+npm start
+privora-ai/
+├── backend/
+│   ├── server.js
+│   ├── routes/
+│   │   ├── chat.js
+│   │   └── jobApply.js
+│   ├── models/
+│   └── utils/
+├── frontend/
+│   └── src/
+│       ├── App.jsx
+│       ├── components/ChatBox.jsx
+│       ├── components/Login.jsx
+│       ├── components/Dashboard.jsx
+├── .env
+└── README.md
+// privora-ai/backend/server.js
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+require('dotenv').config();
+
+const chatRoutes = require('./routes/chat');
+const jobApplyRoutes = require('./routes/jobApply');
+
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
+
+// Routes
+app.use('/api/chat', chatRoutes);
+app.use('/api/jobs', jobApplyRoutes);
+
+// Root
+app.get('/', (req, res) => res.send('Privora AI Backend Running'));
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Gmail API Integration (Nodemailer for now)
+const nodemailer = require('nodemailer');
+
+app.post('/api/send-email', async (req, res) => {
+  const { to, subject, text } = req.body;
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: process.env.GMAIL_USER,
+      to,
+      subject,
+      text,
+    });
+
+    res.status(200).json({ message: 'Email sent successfully!' });
+  } catch (error) {
+    console.error('Email error:', error);
+    res.status(500).json({ error: 'Email sending failed.' });
+  }
+});
+npm install
+npm start
+git clone https://github.com/your-username/your-repo-name.git
+npm install -g replit-export
+replit-export --output repls/ --auth <your_connect.sid_cookie>
+  // Quantum Fire AI - Backend with OpenAI Integration
+
+  // File: /server/index.js (Node.js backend)
+  const express = require('express');
+  const cors = require('cors');
+  const bodyParser = require('body-parser');
+  const { Configuration, OpenAIApi } = require('openai');
+  require('dotenv').config();
+  
+  const app = express();
+  const port = 5000;
+  
+  app.use(cors());
+  app.use(bodyParser.json());
+  
+  const configuration = new Configuration({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+  const openai = new OpenAIApi(configuration);
+  
+  app.get('/', (req, res) => {
+    res.send('Quantum Fire AI Backend Running');
+  });
+  
+  app.post('/api/chat', async (req, res) => {
+    const { message, provider } = req.body;
+  
+    if (provider === 'OpenAI') {
+      try {
+        const completion = await openai.createChatCompletion({
+          model: 'gpt-3.5-turbo',
+          messages: [{ role: 'user', content: message }],
+        });
+        res.json({ reply: completion.data.choices[0].message.content });
+      } catch (error) {
+        res.status(500).json({ error: 'OpenAI API error', details: error.message });
+      }
+    } else {
+      // Placeholder for other AI providers
+      res.json({ reply: `Echo from ${provider}: ${message}` });
+    }
+  });
+  
+  app.listen(port, () => {
+    console.log(`Quantum Fire AI server running on http://localhost:${port}`);
+  });
+  
+  
+  // File: /client/src/App.js (React frontend)
+  import React, { useState } from 'react';
+  import './App.css';
+  
+  function App() {
+    const [message, setMessage] = useState('');
+    const [response, setResponse] = useState('');
+    const [provider, setProvider] = useState('OpenAI');
+  
+    const sendMessage = async () => {
+      const res = await fetch('http://localhost:5000/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, provider }),
+      });
+      const data = await res.json();
+      setResponse(data.reply);
+    };
+  
+    return (
+      <div className="App">
+        <h1>Quantum Fire AI</h1>
+        <select value={provider} onChange={(e) => setProvider(e.target.value)}>
+          <option value="OpenAI">OpenAI</option>
+          <option value="Google">Google Gemini</option>
+          <option value="Claude">Claude</option>
+        </select>
+        <textarea
+          rows="4"
+          cols="50"
+          placeholder="Type your question..."
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+        />
+        <br />
+        <button onClick={sendMessage}>Send</button>
+        <p><strong>Response:</strong> {response}</p>
+      </div>
+    );
+  }
+  
+  export default App;
+  
+  
+  // File: /client/src/App.css
+  .App {
+    text-align: center;
+    padding: 20px;
+    font-family: Arial;
+  }
+  select, textarea, button {
+    margin: 10px;
+    font-size: 16px;
+    padding: 8px;
+    width: 300px;
+  }
+  // Quantum Fire AI - Backend with OpenAI Integration
+
+  // File: /server/index.js (Node.js backend)
+  const express = require('express');
+  const cors = require('cors');
+  const bodyParser = require('body-parser');
+  const { Configuration, OpenAIApi } = require('openai');
+  require('dotenv').config();
+  
+  const app = express();
+  const port = 5000;
+  
+  app.use(cors());
+  app.use(bodyParser.json());
+  
+  const configuration = new Configuration({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+  const openai = new OpenAIApi(configuration);
+  
+  app.get('/', (req, res) => {
+    res.send('Quantum Fire AI Backend Running');
+  });
+  
+  app.post('/api/chat', async (req, res) => {
+    const { message, provider } = req.body;
+  
+    if (provider === 'OpenAI') {
+      try {
+        const completion = await openai.createChatCompletion({
+          model: 'gpt-3.5-turbo',
+          messages: [{ role: 'user', content: message }],
+        });
+        res.json({ reply: completion.data.choices[0].message.content });
+      } catch (error) {
+        res.status(500).json({ error: 'OpenAI API error', details: error.message });
+      }
+    } else {
+      // Placeholder for other AI providers
+      res.json({ reply: `Echo from ${provider}: ${message}` });
+    }
+  });
+  
+  app.listen(port, () => {
+    console.log(`Quantum Fire AI server running on http://localhost:${port}`);
+  });
+  
+  
+  // File: /client/src/App.js (React frontend)
+  import React, { useState } from 'react';
+  import './App.css';
+  
+  function App() {
+    const [message, setMessage] = useState('');
+    const [response, setResponse] = useState('');
+    const [provider, setProvider] = useState('OpenAI');
+  
+    const sendMessage = async () => {
+      const res = await fetch('http://localhost:5000/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, provider }),
+      });
+      const data = await res.json();
+      setResponse(data.reply);
+    };
+  
+    return (
+      <div className="App">
+        <h1>Quantum Fire AI</h1>
+        <select value={provider} onChange={(e) => setProvider(e.target.value)}>
+          <option value="OpenAI">OpenAI</option>
+          <option value="Google">Google Gemini</option>
+          <option value="Claude">Claude</option>
+        </select>
+        <textarea
+          rows="4"
+          cols="50"
+          placeholder="Type your question..."
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+        />
+        <br />
+        <button onClick={sendMessage}>Send</button>
+        <p><strong>Response:</strong> {response}</p>
+      </div>
+    );
+  }
+  
+  export default App;
+  
+  
+  // File: /client/src/App.css
+  .App {
+    text-align: center;
+    padding: 20px;
+    font-family: Arial;
+  }
+  select, textarea, button {
+    margin: 10px;
+    font-size: 16px;
+    padding: 8px;
+    width: 300px;
+  }
+  npm install openai dotenv
+  OPENAI_API_KEY=your_openai_key_here
+  node index.js
+  npm start
+  const firebaseConfig = {
+    apiKey: "AIza....",
+    authDomain: "your-app.firebaseapp.com",
+    projectId: "your-app",
+    storageBucket: "your-app.appspot.com",
+    messagingSenderId: "123456",
+    appId: "1:123456:web:abc123"
+  };
+      
+  // firebase.js
+  import { initializeApp } from 'firebase/app';
+  import { getAuth } from 'firebase/auth';
+  
+  const firebaseConfig = {
+    apiKey: "your_api_key_here",
+    authDomain: "your_app.firebaseapp.com",
+    projectId: "your_app_id",
+    storageBucket: "your_app.appspot.com",
+    messagingSenderId: "your_messaging_id",
+    appId: "your_app_id"
+  };
+  
+  const app = initializeApp(firebaseConfig);
+  export const auth = getAuth(app);
+  import React, { useState } from 'react';
+  import { auth } from './firebase';
+  import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+  
+  export default function Login({ setUser }) {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isNewUser, setIsNewUser] = useState(false);
+  
+    const handleAuth = async () => {
+      try {
+        const userCred = isNewUser
+          ? await createUserWithEmailAndPassword(auth, email, password)
+          : await signInWithEmailAndPassword(auth, email, password);
+  
+        setUser(userCred.user);
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    };
+  
+    return (
+      <div style={{ textAlign: 'center' }}>
+        <h2>{isNewUser ? 'Sign Up' : 'Log In'} to Quantum Fire AI</h2>
+        <input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} /><br />
+        <input placeholder="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} /><br />
+        <button onClick={handleAuth}>{isNewUser ? 'Sign Up' : 'Login'}</button><br />
+        <p onClick={() => setIsNewUser(!isNewUser)}>
+          {isNewUser ? 'Already have an account? Log In' : 'New user? Sign Up'}
+        </p>
+      </div>
+    );
+  }
+  import React, { useState } from 'react';
+  import Login from './Login';
+  import './App.css';
+  
+  function App() {
+    const [user, setUser] = useState(null);
+    const [message, setMessage] = useState('');
+    const [response, setResponse] = useState('');
+    const [provider, setProvider] = useState('OpenAI');
+  
+    const sendMessage = async () => {
+      const res = await fetch('http://localhost:5000/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, provider }),
+      });
+      const data = await res.json();
+      setResponse(data.reply);
+    };
+  
+    if (!user) return <Login setUser={setUser} />;
+  
+    return (
+      <div className="App">
+        <h1>Quantum Fire AI</h1>
+        <p>Welcome, {user.email}</p>
+        <select value={provider} onChange={(e) => setProvider(e.target.value)}>
+          <option value="OpenAI">OpenAI</option>
+          <option value="Google">Google Gemini</option>
+          <option value="Claude">Claude</option>
+        </select>
+        <textarea
+          rows="4"
+          cols="50"
+          placeholder="Type your question..."
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+        />
+        <br />
+        <button onClick={sendMessage}>Send</button>
+        <p><strong>Response:</strong> {response}</p>
+      </div>
+    );
+  }
+  
+  export default App;
+  // Auto Job Finder AI - React Frontend with Express Backend (Starter Code)
+  // Includes a job input form, resume generator, and job listing fetcher (mock)
+  
+  // 1. React Frontend (App.js)
+  import React, { useState } from 'react';
+  import axios from 'axios';
+  
+  export default function App() {
+    const [form, setForm] = useState({ name: '', email: '', skills: '', jobRole: '' });
+    const [resume, setResume] = useState('');
+    const [jobs, setJobs] = useState([]);
+  
+    const handleChange = (e) => {
+      setForm({ ...form, [e.target.name]: e.target.value });
+    };
+  
+    const handleSubmit = async () => {
+      const res = await axios.post('http://localhost:5000/generate-resume', form);
+      setResume(res.data.resume);
+      const jobRes = await axios.get(`http://localhost:5000/fetch-jobs?role=${form.jobRole}`);
+      setJobs(jobRes.data.jobs);
+    };
+  
+    return (
+      <div className="p-6 max-w-xl mx-auto">
+        <h1 className="text-2xl font-bold mb-4">Auto Job Finder AI</h1>
+        <input className="border p-2 w-full mb-2" name="name" placeholder="Name" onChange={handleChange} />
+        <input className="border p-2 w-full mb-2" name="email" placeholder="Email" onChange={handleChange} />
+        <input className="border p-2 w-full mb-2" name="skills" placeholder="Skills (comma separated)" onChange={handleChange} />
+        <input className="border p-2 w-full mb-2" name="jobRole" placeholder="Job Role" onChange={handleChange} />
+        <button onClick={handleSubmit} className="bg-blue-600 text-white px-4 py-2 rounded">Generate Resume & Jobs</button>
+  
+        {resume && (
+          <div className="mt-4">
+            <h2 className="text-xl font-semibold">Generated Resume</h2>
+            <pre className="bg-gray-100 p-2 whitespace-pre-wrap">{resume}</pre>
+          </div>
+        )}
+  
+        {jobs.length > 0 && (
+          <div className="mt-4">
+            <h2 className="text-xl font-semibold">Matching Jobs</h2>
+            <ul className="list-disc ml-5">
+              {jobs.map((job, i) => (
+                <li key={i}>{job}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+  
+  // 2. Express Backend (server.js)
+  const express = require('express');
+  const cors = require('cors');
+  const bodyParser = require('body-parser');
+  
+  const app = express();
+  app.use(cors());
+  app.use(bodyParser.json());
+  
+  app.post('/generate-resume', (req, res) => {
+    const { name, email, skills, jobRole } = req.body;
+    const resume = `Name: ${name}\nEmail: ${email}\nSkills: ${skills}\nSeeking Role: ${jobRole}\n\nExperience:\n- AI Research Intern at FutureTech\n- Software Developer at NovaCode\n\nEducation:\n- B.Tech in Computer Science`;
+    res.send({ resume });
+  });
+  
+  app.get('/fetch-jobs', (req, res) => {
+    const role = req.query.role || 'Software Engineer';
+    const jobs = [
+      `${role} at Google`,
+      `${role} at Microsoft`,
+      `${role} at Amazon`,
+      `${role} at OpenAI`
+    ];
+    res.send({ jobs });
+  });
+  
+  app.listen(5000, () => console.log('Server running on http://localhost:5000'));
+  import React, { useState } from 'react';
+  import axios from 'axios';
+  
+  export default function MultiAIChat() {
+    const [aiModel, setAiModel] = useState('Claude'); // Default to Claude
+    const [userInput, setUserInput] = useState('');
+    const [response, setResponse] = useState('');
+  
+    const handleChange = (e) => {
+      setUserInput(e.target.value);
+    };
+  
+    const handleModelChange = (e) => {
+      setAiModel(e.target.value);
+    };
+  
+    const handleSubmit = async () => {
+      const res = await axios.post('http://localhost:5000/chat', { 
+        input: userInput, 
+        model: aiModel 
+      });
+      setResponse(res.data.response);
+    };
+  
+    return (
+      <div className="chat-container">
+        <h1>Multi-AI Chat</h1>
+        <select onChange={handleModelChange} value={aiModel}>
+          <option value="Claude">Claude (Anthropic)</option>
+          <option value="Gemini">Gemini (Google)</option>
+        </select>
+  
+        <textarea 
+          value={userInput} 
+          onChange={handleChange} 
+          placeholder="Ask something..." 
+        />
+  
+        <button onClick={handleSubmit}>Submit</button>
+  
+        <div className="response">
+          <p>{response}</p>
+        </div>
+      </div>
+    );
+  }
+  const express = require('express');
+  const axios = require('axios');
+  const app = express();
+  
+  app.use(express.json());
+  
+  app.post('/chat', async (req, res) => {
+    const { input, model } = req.body;
+  
+    try {
+      let response;
+      if (model === 'Claude') {
+        response = await axios.post('https://api.anthropic.com/v1/claude', { prompt: input });
+      } else if (model === 'Gemini') {
+        response = await axios.post('https://api.google.com/gemini', { prompt: input });
+      }
+  
+      const aiResponse = response.data.choices[0].text;
+      res.send({ response: aiResponse });
+    } catch (err) {
+      console.error(err);
+      res.status(500).send('Error with AI request');
+    }
+  });
+  
+  app.listen(5000, () => console.log('Server running on http://localhost:5000'));
+  import React, { useState } from 'react';
+  import axios from 'axios';
+  
+  export default function ChatApp() {
+    const [messages, setMessages] = useState([]);
+    const [input, setInput] = useState('');
+    const [mode, setMode] = useState('default');
+  
+    const askAI = async () => {
+      const response = await axios.post('http://localhost:5000/ask', {
+        message: input,
+        mode,
+      });
+      setMessages([...messages, { from: 'user', text: input }, { from: 'ai', text: response.data.reply }]);
+      setInput('');
+    };
+  
+    return (
+      <div className="app">
+        <h1>Quantum Fire AI</h1>
+  
+        <select onChange={(e) => setMode(e.target.value)} value={mode}>
+          <option value="default">Default</option>
+          <option value="friendly">Friendly</option>
+          <option value="technical">Technical</option>
+          <option value="jobfinder">Job Finder</option>
+        </select>
+  
+        <div className="chat-box">
+          {messages.map((msg, i) => (
+            <p key={i}><strong>{msg.from}:</strong> {msg.text}</p>
+          ))}
+        </div>
+  
+        <textarea
+          placeholder="Ask something..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+        />
+        <button onClick={askAI}>Ask AI</button>
+      </div>
+    );
+  }
+  const express = require('express');
+const cors = require('cors');
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+app.post('/ask', async (req, res) => {
+  const { message, mode } = req.body;
+
+  let reply = '';
+
+  if (mode === 'friendly') {
+    reply = `Hey! 😊 You said: "${message}". Here's something helpful for you...`;
+  } else if (mode === 'technical') {
+    reply = `Technically speaking, "${message}" might involve...`;
+  } else if (mode === 'jobfinder') {
+    reply = `Searching for jobs related to: "${message}". Please wait... (mock response)`;
+  } else {
+    reply = `You asked: "${message}". Here is a general response.`;
+  }
+
+  res.send({ reply });
+});
+
+app.listen(5000, () => console.log('Server is running on http://localhost:5000'));
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import json
+from datetime import datetime
+import hashlib
+
+app = Flask(__name__)
+CORS(app)
+
+# Simulate responses from different AIs
+def generate_reply(message, mode="default", ai="chatgpt"):
+    if ai == "claude":
+        prefix = "Claude says:"
+    elif ai == "gemini":
+        prefix = "Gemini replies:"
+    else:
+        prefix = "ChatGPT says:"
+
+    if mode == "friendly":
+        return f"{prefix} 😊 Hi there! You asked: '{message}' – here's something nice for you!"
+    elif mode == "technical":
+        return f"{prefix} 🤖 The technical explanation of '{message}' involves complex systems and data..."
+    elif mode == "jobfinder":
+        return f"{prefix} 🔍 Searching jobs related to '{message}'... (Mock LinkedIn data)"
+    else:
+        return f"{prefix} You said: '{message}'. Here's a general response!"
+
+# Chat route
+@app.route('/ask', methods=['POST'])
+def ask():
+    data = request.json
+    message = data.get("message")
+    mode = data.get("mode", "default")
+    ai = data.get("ai", "chatgpt")
+
+    reply = generate_reply(message, mode, ai)
+    return jsonify({"reply": reply})
+
+
+# Encrypted vault for storing private messages (local simulation)
+@app.route('/vault', methods=['POST'])
+def vault():
+    data = request.json
+    message = data.get("message")
+    timestamp = datetime.now().isoformat()
+    hashed = hashlib.sha256(message.encode()).hexdigest()
+
+    # Save to a JSON file (local vault simulation)
+    with open("vault.json", "a") as f:
+        f.write(json.dumps({"time": timestamp, "hash": hashed}) + "\n")
+
+    return jsonify({"status": "saved", "hash": hashed})
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Quantum Fire AI</title>
+      <style>
+        body { font-family: sans-serif; padding: 20px; background: #121212; color: white; }
+        textarea, select, input, button { margin: 10px 0; width: 100%; padding: 10px; border-radius: 5px; }
+        .chat { margin-top: 20px; }
+        .chat p { background: #2a2a2a; padding: 10px; border-radius: 10px; margin: 5px 0; }
+      </style>
+    </head>
+    <body>
+      <h1>Quantum Fire AI</h1>
+    
+      <select id="mode">
+        <option value="default">Default</option>
+        <option value="friendly">Friendly</option>
+        <option value="technical">Technical</option>
+        <option value="jobfinder">Job Finder</option>
+      </select>
+    
+      <select id="ai">
+        <option value="chatgpt">ChatGPT</option>
+        <option value="claude">Claude</option>
+        <option value="gemini">Gemini</option>
+      </select>
+    
+      <textarea id="userMessage" placeholder="Ask something..."></textarea>
+      <button onclick="sendMessage()">Ask</button>
+      <button onclick="saveVault()">Save to Vault</button>
+    
+      <div class="chat" id="chatBox"></div>
+    
+      <script>
+        async function sendMessage() {
+          const message = document.getElementById('userMessage').value;
+          const mode = document.getElementById('mode').value;
+          const ai = document.getElementById('ai').value;
+    
+          const res = await fetch('http://localhost:5000/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message, mode, ai })
+          });
+    
+          const data = await res.json();
+          const chatBox = document.getElementById('chatBox');
+          chatBox.innerHTML += `<p><b>You:</b> ${message}</p>`;
+          chatBox.innerHTML += `<p><b>AI:</b> ${data.reply}</p>`;
+        }
+    
+        async function saveVault() {
+          const message = document.getElementById('userMessage').value;
+          const res = await fetch('http://localhost:5000/vault', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message })
+          });
+    
+          const data = await res.json();
+          alert('Message saved in vault with hash: ' + data.hash);
+        }
+      </script>
+    </body>
+    </html>
+    pip install flask flask-cors
+    python app.py
+    # Quantum Fire AI - Advanced Feature Modules (Python)
+
+    # Requirements:
+    # pip install flask flask-cors moviepy gtts requests beautifulsoup4
+    
+    from flask import Flask, request, jsonify
+    from flask_cors import CORS
+    from moviepy.editor import TextClip, ImageClip, concatenate_videoclips
+    from gtts import gTTS
+    import os
+    import requests
+    from bs4 import BeautifulSoup
+    
+    app = Flask(__name__)
+    CORS(app)
+    
+    @app.route('/generate_video', methods=['POST'])
+    def generate_video():
+        data = request.json
+        script = data.get("script")
+        image_url = data.get("image_url")
+    
+        # Download image
+        image_path = "image.jpg"
+        img_data = requests.get(image_url).content
+        with open(image_path, 'wb') as handler:
+            handler.write(img_data)
+    
+        # Create video
+        image_clip = ImageClip(image_path).set_duration(5)
+        text_clip = TextClip(script, fontsize=24, color='white').set_duration(5)
+        final_clip = concatenate_videoclips([image_clip.set_position("center"), text_clip.set_position("bottom")])
+        final_clip.write_videofile("output.mp4")
+    
+        return jsonify({"status": "video generated", "path": "output.mp4"})
+    
+    @app.route('/speak', methods=['POST'])
+    def speak():
+        data = request.json
+        message = data.get("message")
+        tts = gTTS(text=message, lang='en')
+        path = "voice.mp3"
+        tts.save(path)
+        return jsonify({"status": "voice generated", "path": path})
+    
+    @app.route('/jobfinder', methods=['POST'])
+    def jobfinder():
+        data = request.json
+        query = data.get("query")
+        url = f"https://www.indeed.com/jobs?q={query}"
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        jobs = [a.text.strip() for a in soup.select('h2.jobTitle')[:5]]
+        return jsonify({"jobs": jobs})
+    
+    @app.route('/profile', methods=['POST'])
+    def profile():
+        data = request.json
+        profile_name = data.get("name")
+        behaviors = data.get("behaviors")
+    
+        profile_path = f"profiles/{profile_name}.json"
+        os.makedirs("profiles", exist_ok=True)
+        with open(profile_path, "w") as f:
+            f.write(json.dumps(behaviors, indent=2))
+        return jsonify({"status": "profile saved", "path": profile_path})
+    
+    if __name__ == '__main__':
+        app.run(debug=True)
+        # Quantum Fire AI - Advanced Feature Modules (Python)
+
+        # Requirements:
+        # pip install flask flask-cors moviepy gtts requests beautifulsoup4
+        
+        from flask import Flask, request, jsonify
+        from flask_cors import CORS
+        from moviepy.editor import TextClip, ImageClip, concatenate_videoclips
+        from gtts import gTTS
+        import os
+        import json
+        import requests
+        from bs4 import BeautifulSoup
+        
+        app = Flask(__name__)
+        CORS(app)
+        
+        @app.route('/generate_video', methods=['POST'])
+        def generate_video():
+            data = request.json
+            script = data.get("script")
+            image_url = data.get("image_url")
+        
+            # Download image
+            image_path = "image.jpg"
+            img_data = requests.get(image_url).content
+            with open(image_path, 'wb') as handler:
+                handler.write(img_data)
+        
+            # Create video
+            image_clip = ImageClip(image_path).set_duration(5)
+            text_clip = TextClip(script, fontsize=24, color='white').set_duration(5)
+            final_clip = concatenate_videoclips([image_clip.set_position("center"), text_clip.set_position("bottom")])
+            final_clip.write_videofile("output.mp4")
+        
+            return jsonify({"status": "video generated", "path": "output.mp4"})
+        
+        @app.route('/speak', methods=['POST'])
+        def speak():
+            data = request.json
+            message = data.get("message")
+            tts = gTTS(text=message, lang='en')
+            path = "voice.mp3"
+            tts.save(path)
+            return jsonify({"status": "voice generated", "path": path})
+        
+        @app.route('/jobfinder', methods=['POST'])
+        def jobfinder():
+            data = request.json
+            query = data.get("query")
+            url = f"https://www.indeed.com/jobs?q={query}"
+            response = requests.get(url)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            jobs = [a.text.strip() for a in soup.select('h2.jobTitle')[:5]]
+            return jsonify({"jobs": jobs})
+        
+        @app.route('/profile', methods=['POST'])
+        def profile():
+            data = request.json
+            profile_name = data.get("name")
+            behaviors = data.get("behaviors")
+        
+            profile_path = f"profiles/{profile_name}.json"
+            os.makedirs("profiles", exist_ok=True)
+            with open(profile_path, "w") as f:
+                f.write(json.dumps(behaviors, indent=2))
+            return jsonify({"status": "profile saved", "path": profile_path})
+        
+        if __name__ == '__main__':
+            app.run(debug=True)
+            # Quantum Fire AI - Advanced Feature Modules (Python)
+
+            # Requirements:
+            # pip install flask flask-cors moviepy gtts requests beautifulsoup4
+            
+            from flask import Flask, request, jsonify
+            from flask_cors import CORS
+            from moviepy.editor import TextClip, ImageClip, concatenate_videoclips
+            from gtts import gTTS
+            import os
+            import json
+            import requests
+            from bs4 import BeautifulSoup
+            
+            app = Flask(__name__)
+            CORS(app)
+            
+            @app.route('/generate_video', methods=['POST'])
+            def generate_video():
+                data = request.json
+                script = data.get("script")
+                image_url = data.get("image_url")
+            
+                # Download image
+                image_path = "image.jpg"
+                img_data = requests.get(image_url).content
+                with open(image_path, 'wb') as handler:
+                    handler.write(img_data)
+            
+                # Create video
+                image_clip = ImageClip(image_path).set_duration(5)
+                text_clip = TextClip(script, fontsize=24, color='white').set_duration(5)
+                final_clip = concatenate_videoclips([image_clip.set_position("center"), text_clip.set_position("bottom")])
+                final_clip.write_videofile("output.mp4")
+            
+                return jsonify({"status": "video generated", "path": "output.mp4"})
+            
+            @app.route('/speak', methods=['POST'])
+            def speak():
+                data = request.json
+                message = data.get("message")
+                tts = gTTS(text=message, lang='en')
+                path = "voice.mp3"
+                tts.save(path)
+                return jsonify({"status": "voice generated", "path": path})
+            
+            @app.route('/jobfinder', methods=['POST'])
+            def jobfinder():
+                data = request.json
+                query = data.get("query")
+                url = f"https://www.indeed.com/jobs?q={query}"
+                response = requests.get(url)
+                soup = BeautifulSoup(response.text, 'html.parser')
+                jobs = [a.text.strip() for a in soup.select('h2.jobTitle')[:5]]
+                return jsonify({"jobs": jobs})
+            
+            @app.route('/profile', methods=['POST'])
+            def profile():
+                data = request.json
+                profile_name = data.get("name")
+                behaviors = data.get("behaviors")
+            
+                profile_path = f"profiles/{profile_name}.json"
+                os.makedirs("profiles", exist_ok=True)
+                with open(profile_path, "w") as f:
+                    f.write(json.dumps(behaviors, indent=2))
+                return jsonify({"status": "profile saved", "path": profile_path})
+            
+            if __name__ == '__main__':
+                app.run(debug=True)
+                # Quantum Fire AI - Advanced Feature Modules (Python)
+
+                # Requirements:
+                # pip install flask flask-cors gtts requests beautifulsoup4
+                
+                from flask import Flask, request, jsonify
+                from flask_cors import CORS
+                from gtts import gTTS
+                import os
+                import requests
+                from bs4 import BeautifulSoup
+                import json
+                from PIL import Image, ImageDraw, ImageFont
+                import cv2
+                import numpy as np
+                
+                app = Flask(__name__)
+                CORS(app)
+                
+                @app.route('/generate_video', methods=['POST'])
+                def generate_video():
+                    data = request.json
+                    script = data.get("script")
+                    image_url = data.get("image_url")
+                
+                    # Download image
+                    image_path = "image.jpg"
+                    img_data = requests.get(image_url).content
+                    with open(image_path, 'wb') as handler:
+                        handler.write(img_data)
+                
+                    # Load the image and create a frame with text overlay
+                    img = Image.open(image_path)
+                    draw = ImageDraw.Draw(img)
+                    font = ImageFont.load_default()
+                    draw.text((10, img.height - 20), script, fill=(255, 255, 255), font=font)
+                    img.save("frame.jpg")
+                
+                    # Create a video using OpenCV
+                    frame = cv2.imread("frame.jpg")
+                    height, width, layers = frame.shape
+                    video = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc(*'XVID'), 1, (width, height))
+                
+                    for _ in range(5):  # 5 seconds of same frame
+                        video.write(frame)
+                    video.release()
+                
+                    return jsonify({"status": "video generated", "path": "output.avi"})
+                
+                @app.route('/speak', methods=['POST'])
+                def speak():
+                    data = request.json
+                    message = data.get("message")
+                    tts = gTTS(text=message, lang='en')
+                    path = "voice.mp3"
+                    tts.save(path)
+                    return jsonify({"status": "voice generated", "path": path})
+                
+                @app.route('/jobfinder', methods=['POST'])
+                def jobfinder():
+                    data = request.json
+                    query = data.get("query")
+                    url = f"https://www.indeed.com/jobs?q={query}"
+                    response = requests.get(url)
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    jobs = [a.text.strip() for a in soup.select('h2.jobTitle')[:5]]
+                    return jsonify({"jobs": jobs})
+                
+                @app.route('/profile', methods=['POST'])
+                def profile():
+                    data = request.json
+                    profile_name = data.get("name")
+                    behaviors = data.get("behaviors")
+                
+                    profile_path = f"profiles/{profile_name}.json"
+                    os.makedirs("profiles", exist_ok=True)
+                    with open(profile_path, "w") as f:
+                        f.write(json.dumps(behaviors, indent=2))
+                    return jsonify({"status": "profile saved", "path": profile_path})
+                
+                if __name__ == '__main__':
+                    app.run(debug=True)       ReferenceError: askAI is not defined
+                    <button onclick="askAI()">Ask AI</button>
+                    <script>
+                      async function askAI() {
+                        const userMessage = document.getElementById("user-input").value;
+                    
+                        const response = await fetch("http://localhost:5000/speak", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ message: userMessage }),
+                        });
+                    
+                        const result = await response.json();
+                        console.log("Voice generated:", result.path);
+                    
+                        const audio = new Audio(result.path);
+                        audio.play();
+                      }
+                    </script>
+<input id="user-input" type="text" placeholder="Type your message here" />
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Quantum Fire Chat</title>
+</head>
+<body>
+  <h1>Quantum Fire AI Chat</h1>
+  <input id="user-input" type="text" placeholder="Ask something..." />
+  <button onclick="askAI()">Ask AI</button>
+
+  <script>
+    async function askAI() {
+      const userMessage = document.getElementById("user-input").value;
+
+      const response = await fetch("http://localhost:5000/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMessage }),
+      });
+
+      const result = await response.json();
+      console.log("Voice generated:", result.path);
+
+      const audio = new Audio(result.path);
+      audio.play();
+    }
+  </script>
+</body>
+</html>
+SyntaxError: Failed to execute 'setValueAndClosePopup' on 'PagePopupController': Unexpected end of input
+import React, { useState } from "react";
+
+function App() {
+  const [popupVisible, setPopupVisible] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const [result, setResult] = useState("");
+
+  const setValueAndClosePopup = () => {
+    if (!inputValue.trim()) {
+      alert("Input is required.");
+      return;
+    }
+
+    try {
+      // Simulate processing the value (e.g., sending to backend or storing)
+      setResult(inputValue);
+      setPopupVisible(false);
+    } catch (error) {
+      console.error("Failed to process input:", error);
+    }
+  };
+
+  return (
+    <div style={{ padding: "20px" }}>
+      <h1>Set Value and Close Popup</h1>
+      <button onClick={() => setPopupVisible(true)}>Open Popup</button>
+
+      {popupVisible && (
+        <div style={{ marginTop: "20px", border: "1px solid gray", padding: "10px" }}>
+          <input
+            type="text"
+            placeholder="Enter something..."
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+          />
+          <button onClick={setValueAndClosePopup}>Submit</button>
+        </div>
+      )}
+
+      {result && <p>Result: {result}</p>}
+    </div>
+  );
+}
+
+export default App;
+import React, { useState } from "react";
+
+function App() {
+  const [popupVisible, setPopupVisible] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const setValueAndClosePopup = async () => {
+    if (!inputValue.trim()) {
+      alert("Input is required.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Mock backend API call (replace URL with your backend endpoint)
+      const response = await fetch("https://jsonplaceholder.typicode.com/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: inputValue }),
+      });
+
+      if (!response.ok) throw new Error("Server error");
+
+      const data = await response.json();
+      setResult(`Saved content ID: ${data.id}`);
+
+      setPopupVisible(false); // Close popup
+      setInputValue(""); // Clear input
+    } catch (error) {
+      console.error("Error sending data:", error);
+      alert("Failed to send data to server.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ padding: "20px", fontFamily: "Arial" }}>
+      <h1>Set Value and Send to Server</h1>
+      <button onClick={() => setPopupVisible(true)}>Open Popup</button>
+
+      {popupVisible && (
+        <div style={{ marginTop: "20px", border: "1px solid gray", padding: "10px", borderRadius: "8px" }}>
+          <input
+            type="text"
+            placeholder="Enter something..."
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+          />
+          <button onClick={setValueAndClosePopup} disabled={loading} style={{ marginLeft: "10px" }}>
+            {loading ? "Sending..." : "Submit"}
+          </button>
+        </div>
+      )}
+
+      {result && (
+        <p style={{ marginTop: "20px", color: "green" }}>
+          ✅ {result}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export default App;
+const response = await fetch("https://jsonplaceholder.typicode.com/posts", {
+  const response = await fetch("https://your-api.com/submit-value", {
