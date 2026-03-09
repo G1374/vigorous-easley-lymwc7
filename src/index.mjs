@@ -22,9 +22,12 @@ document.getElementById("app").innerHTML = `
     <section class="main">
       <header class="panel topbar">
         <input class="search" placeholder="AI search: photos from trip, invoices 2026, song by name..." />
-        <div class="storage">
-          <strong>398 GB / 1 TB used</strong>
-          <div class="bar"><span></span></div>
+        <div class="topbar-actions">
+          <a class="download-btn" href="./releases/nebula-drive-dashboard.zip" download>⬇ Download App</a>
+          <div class="storage">
+            <strong>398 GB / 1 TB used</strong>
+            <div class="bar"><span></span></div>
+          </div>
         </div>
       </header>
 
@@ -77,8 +80,8 @@ document.getElementById("app").innerHTML = `
           </section>
 
           <section class="panel widget">
-            <strong>Secure Sharing</strong>
-            <p class="foot-note">Temporary links, QR transfer, and password-protected folder sharing are active.</p>
+            <strong>Download Center</strong>
+            <p class="foot-note">To generate app package run: <code>npm run download-app</code>. Then click Download App.</p>
           </section>
         </aside>
       </div>

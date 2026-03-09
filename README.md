@@ -27,3 +27,17 @@ http://localhost:1234
 ```bash
 npm run build
 ```
+
+## Download app package (.zip)
+
+Generate a downloadable app bundle:
+
+```bash
+npm run download-app
+```
+
+Output file:
+
+```text
+releases/nebula-drive-dashboard.zip
+```

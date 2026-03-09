@@ -5,7 +5,8 @@
   "scripts": {
     "start": "parcel ./src/index.html",
     "build": "parcel build ./src/index.html",
-    "preview": "parcel ./src/index.html"
+    "preview": "parcel ./src/index.html",
+    "download-app": "npm run build && python3 scripts/package_app.py"
   },
   "devDependencies": {
     "parcel": "^2.0.0",
