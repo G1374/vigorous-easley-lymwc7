@@ -35,6 +35,29 @@ Then open the local Parcel URL, usually `http://localhost:1234`.
 npm run build
 ```
 
+
+## NPM download package
+
+Create a downloadable npm tarball with:
+
+```bash
+npm run package:npm
+```
+
+This creates:
+
+```text
+release/cloudbox-media-vault-1.0.0.tgz
+```
+
+Install that package locally in another project or folder with:
+
+```bash
+npm install ./release/cloudbox-media-vault-1.0.0.tgz
+```
+
+The npm tarball includes the built `dist/` app plus source, docs, and packaging scripts.
+
 ## Android and PC download options
 
 - Android PWA: open the app in Chrome and use **Install app** or **Add to Home screen**.

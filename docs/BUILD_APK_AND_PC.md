@@ -29,6 +29,27 @@ Use it in one of these ways:
 2. Deploy the extracted files to a website.
 3. Open the deployed app in Chrome or Edge and choose **Install app** or **Create shortcut**.
 
+
+## Create an NPM download package
+
+```bash
+npm run package:npm
+```
+
+This creates:
+
+```text
+release/cloudbox-media-vault-1.0.0.tgz
+```
+
+Install the generated package locally with:
+
+```bash
+npm install ./release/cloudbox-media-vault-1.0.0.tgz
+```
+
+The package includes the production `dist/` build plus the source and packaging helper files.
+
 ## Create Android APK source package
 
 Android APK builds require Android SDK tooling and a real HTTPS deployment URL. Generate the Android package files with:
