@@ -37,6 +37,10 @@ npm run build
 
 ## Android and PC download options
 
-- Android: open the app in Chrome and use **Install app** or **Add to Home screen**.
-- PC: open the app in Chrome or Edge and use **Install app** or **Create shortcut**.
+- Android PWA: open the app in Chrome and use **Install app** or **Add to Home screen**.
+- PC PWA: open the app in Chrome or Edge and use **Install app** or **Create shortcut**.
+- PC ZIP package: run `npm run package:pc` to create `release/cloudbox-media-vault-pc.zip`.
+- Android APK source package: run `APP_URL=https://your-real-domain.com npm run package:android` to create `release/cloudbox-media-vault-android-twa.zip`, then build the final APK with Android SDK + Bubblewrap.
 - The in-app **Download manifest** button exports the generated PWA manifest for packaging experiments.
+
+See `docs/BUILD_APK_AND_PC.md` for full APK and PC packaging instructions.
