@@ -15,6 +15,10 @@ const state = {
   selectedItemId: null,
   authMode: "login",
   authError: "",
+  aiPrompt: "",
+  aiResponse: "Ask the Vault AI to summarize files, find duplicates, suggest folders, or organize media automatically.",
+  installPrompt: null,
+  installStatus: "Install on Android or PC from this button when your browser supports it.",
 };
 
 const app = document.getElementById("app");
@@ -210,6 +214,174 @@ function totalStoredBytes() {
   return state.items.reduce((sum, item) => sum + (item.size || 0), 0);
 }
 
+function filesOnly() {
+  return state.items.filter((item) => item.type !== "folder");
+}
+
+function foldersOnly() {
+  return state.items.filter((item) => item.type === "folder");
+}
+
+function folderName(folderId) {
+  if (folderId === "root") return "My Vault";
+  return state.items.find((item) => item.id === folderId)?.name || "Unknown folder";
+}
+
+function suggestedFolderName(item) {
+  if (item.type === "video") return "Movies";
+  if (item.type === "audio") return "Music";
+  if (["pdf", "doc", "docx", "txt", "md", "rtf"].includes(item.extension)) return "Documents";
+  if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(item.extension)) return "Pictures";
+  if (["zip", "rar", "7z", "tar", "gz"].includes(item.extension)) return "Archives";
+  return "Files";
+}
+
+function duplicateGroups() {
+  const groups = new Map();
+  filesOnly().forEach((item) => {
+    const key = `${item.name.toLowerCase()}-${item.size}`;
+    groups.set(key, [...(groups.get(key) || []), item]);
+  });
+  return [...groups.values()].filter((group) => group.length > 1);
+}
+
+function buildAiInsights() {
+  const files = filesOnly();
+  const videos = files.filter((item) => item.type === "video");
+  const songs = files.filter((item) => item.type === "audio");
+  const docs = files.filter((item) => item.type === "file");
+  const largest = [...files].sort((a, b) => b.size - a.size).slice(0, 3);
+  const duplicates = duplicateGroups();
+  const uncategorized = files.filter((item) => item.parentId === "root");
+  const folderSuggestions = [...new Set(uncategorized.map(suggestedFolderName))];
+
+  return { files, videos, songs, docs, largest, duplicates, uncategorized, folderSuggestions };
+}
+
+function renderAiInsights() {
+  const insights = buildAiInsights();
+  const largest = insights.largest.length
+    ? insights.largest.map((item) => `${item.name} (${formatBytes(item.size)})`).join(", ")
+    : "No uploaded files yet";
+  const duplicateText = insights.duplicates.length
+    ? `${insights.duplicates.length} possible duplicate group(s) found`
+    : "No obvious duplicate files";
+  const suggestionText = insights.folderSuggestions.length
+    ? insights.folderSuggestions.join(", ")
+    : "Upload files to get folder ideas";
+
+  return `
+    <section class="ai-panel" aria-label="Vault AI assistant">
+      <div>
+        <p class="eyebrow">Local AI tools</p>
+        <h2>Vault AI Assistant</h2>
+        <p>This on-device assistant reads your file names, types, sizes, and folders to generate private organization tips without sending data to a server.</p>
+      </div>
+      <div class="ai-metrics">
+        <span>🎬 ${insights.videos.length} movies</span>
+        <span>🎵 ${insights.songs.length} songs</span>
+        <span>📄 ${insights.docs.length} files</span>
+      </div>
+      <form id="aiForm" class="ai-form">
+        <input id="aiPrompt" type="text" value="${escapeHtml(state.aiPrompt)}" placeholder="Ask: find duplicates, summarize, suggest folders..." />
+        <button type="submit">Ask AI</button>
+      </form>
+      <div class="ai-actions">
+        <button id="organizeButton" type="button">AI organize files</button>
+        <button id="suggestFoldersButton" type="button">Create suggested folders</button>
+        <button id="exportVaultButton" type="button">Download vault index</button>
+      </div>
+      <div class="ai-answer">
+        <strong>${escapeHtml(state.aiResponse)}</strong>
+        <small>Largest: ${escapeHtml(largest)} · ${escapeHtml(duplicateText)} · Suggested folders: ${escapeHtml(suggestionText)}</small>
+      </div>
+    </section>
+  `;
+}
+
+function answerVaultQuestion(prompt) {
+  const query = prompt.toLowerCase();
+  const insights = buildAiInsights();
+
+  if (!prompt.trim()) return "Try asking about duplicates, movies, songs, large files, folders, or storage.";
+  if (query.includes("duplicate")) {
+    if (!insights.duplicates.length) return "I found no obvious duplicates by matching file name and size.";
+    return `Possible duplicates: ${insights.duplicates.map((group) => group.map((item) => item.name).join(" / ")).join("; ")}.`;
+  }
+  if (query.includes("movie") || query.includes("video")) {
+    return insights.videos.length ? `Movies: ${insights.videos.map((item) => `${item.name} in ${folderName(item.parentId)}`).join(", ")}.` : "No uploaded movies yet.";
+  }
+  if (query.includes("song") || query.includes("music") || query.includes("audio")) {
+    return insights.songs.length ? `Songs: ${insights.songs.map((item) => `${item.name} in ${folderName(item.parentId)}`).join(", ")}.` : "No uploaded songs yet.";
+  }
+  if (query.includes("large") || query.includes("storage") || query.includes("space")) {
+    return `You are using ${formatBytes(totalStoredBytes())}. Largest files: ${insights.largest.map((item) => `${item.name} (${formatBytes(item.size)})`).join(", ") || "none"}.`;
+  }
+  if (query.includes("folder") || query.includes("organize")) {
+    return insights.folderSuggestions.length ? `I suggest folders: ${insights.folderSuggestions.join(", ")}. Use AI organize files to move root files automatically.` : "Your root folder is already organized or empty.";
+  }
+
+  return `Vault summary: ${insights.files.length} files, ${foldersOnly().length} folders, ${formatBytes(totalStoredBytes())} used. Ask about duplicates, movies, songs, folders, or storage for more detail.`;
+}
+
+function createFolderForName(name) {
+  let folder = state.items.find((item) => item.type === "folder" && item.parentId === "root" && item.name.toLowerCase() === name.toLowerCase());
+  if (folder) return folder;
+
+  folder = {
+    id: crypto.randomUUID(),
+    type: "folder",
+    name,
+    parentId: "root",
+    ownerId: state.user.id,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    size: 0,
+  };
+  state.items.push(folder);
+  return folder;
+}
+
+function createSuggestedFolders() {
+  const names = buildAiInsights().folderSuggestions;
+  names.forEach(createFolderForName);
+  saveItems();
+  state.aiResponse = names.length ? `Created or confirmed folders: ${names.join(", ")}.` : "No folder suggestions yet. Upload files first.";
+  renderApp();
+}
+
+function organizeFilesWithAi() {
+  let moved = 0;
+  filesOnly().forEach((item) => {
+    if (item.parentId !== "root") return;
+    const folder = createFolderForName(suggestedFolderName(item));
+    item.parentId = folder.id;
+    item.updatedAt = new Date().toISOString();
+    moved += 1;
+  });
+
+  saveItems();
+  state.currentFolderId = "root";
+  state.selectedItemId = null;
+  state.aiResponse = moved ? `AI organized ${moved} root file(s) into smart folders.` : "Nothing to organize right now.";
+  renderApp();
+}
+
+function downloadVaultIndex() {
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    user: { id: state.user.id, email: state.user.email, displayName: state.user.displayName },
+    items: state.items.map(({ file, objectUrl, ...item }) => ({ ...item, folder: folderName(item.parentId) })),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "cloudbox-vault-index.json";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function createFolder(name) {
   const trimmed = name.trim();
   if (!trimmed) return;
@@ -394,6 +566,23 @@ function renderTreeNode(folder, level = 0) {
   `;
 }
 
+function renderInstallPanel() {
+  return `
+    <section class="install-panel" aria-label="Download app options">
+      <div>
+        <p class="eyebrow">Download app</p>
+        <h2>Install for Android or PC</h2>
+        <p>Use the PWA install button for a home-screen Android app or a desktop app shortcut on Chrome/Edge.</p>
+        <small>${escapeHtml(state.installStatus)}</small>
+      </div>
+      <div class="install-actions">
+        <button id="installAppButton" type="button">Install app</button>
+        <button id="downloadManifestButton" type="button">Download manifest</button>
+      </div>
+    </section>
+  `;
+}
+
 function renderAuth() {
   const isSignup = state.authMode === "signup";
   app.innerHTML = `
@@ -459,6 +648,11 @@ function renderApp() {
         <div><strong>${formatBytes(totalStoredBytes())}</strong><span>Storage used</span></div>
         <div><strong>${files}</strong><span>Files</span></div>
         <div><strong>${folders}</strong><span>Folders</span></div>
+      </section>
+
+      <section class="smart-grid">
+        ${renderAiInsights()}
+        ${renderInstallPanel()}
       </section>
 
       <section class="workspace">
@@ -623,6 +817,19 @@ function bindAppEvents() {
     event.currentTarget.reset();
   });
 
+  document.getElementById("aiForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    state.aiPrompt = document.getElementById("aiPrompt").value;
+    state.aiResponse = answerVaultQuestion(state.aiPrompt);
+    renderApp();
+  });
+
+  document.getElementById("organizeButton").addEventListener("click", organizeFilesWithAi);
+  document.getElementById("suggestFoldersButton").addEventListener("click", createSuggestedFolders);
+  document.getElementById("exportVaultButton").addEventListener("click", downloadVaultIndex);
+  document.getElementById("installAppButton").addEventListener("click", installApp);
+  document.getElementById("downloadManifestButton").addEventListener("click", downloadManifest);
+
   document.querySelectorAll("[data-folder-id]").forEach((button) => {
     button.addEventListener("click", () => {
       state.currentFolderId = button.dataset.folderId;
@@ -725,6 +932,64 @@ function bindMediaControls() {
   sync();
 }
 
+async function installApp() {
+  if (!state.installPrompt) {
+    state.installStatus = "If the install prompt does not appear, use your browser menu: Install app, Add to Home Screen, or Create shortcut.";
+    renderApp();
+    return;
+  }
+
+  state.installPrompt.prompt();
+  const choice = await state.installPrompt.userChoice;
+  state.installStatus = choice.outcome === "accepted" ? "CloudBox install started." : "Install was dismissed. You can try again later.";
+  state.installPrompt = null;
+  renderApp();
+}
+
+function manifestPayload() {
+  return {
+    name: "CloudBox Media Vault",
+    short_name: "CloudBox",
+    description: "Installable private media vault with AI organization tools.",
+    start_url: window.location.href,
+    display: "standalone",
+    background_color: "#08111f",
+    theme_color: "#08111f",
+    icons: [{ src: new URL("./icon.svg", import.meta.url).href, sizes: "any", type: "image/svg+xml", purpose: "any maskable" }],
+  };
+}
+
+function attachManifest() {
+  const blob = new Blob([JSON.stringify(manifestPayload(), null, 2)], { type: "application/manifest+json" });
+  const link = document.createElement("link");
+  link.rel = "manifest";
+  link.href = URL.createObjectURL(blob);
+  document.head.appendChild(link);
+}
+
+function downloadManifest() {
+  const blob = new Blob([JSON.stringify(manifestPayload(), null, 2)], { type: "application/manifest+json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "cloudbox-manifest.webmanifest";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function registerPwa() {
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    state.installPrompt = event;
+    state.installStatus = "Ready to install on Android or PC.";
+    if (state.user) renderApp();
+  });
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register(new URL("./service-worker.js", import.meta.url));
+  }
+}
+
 async function restoreSession() {
   const sessionUserId = sessionStorage.getItem(SESSION_KEY);
   const user = loadUsers().find((entry) => entry.id === sessionUserId);
@@ -736,4 +1001,6 @@ async function restoreSession() {
   }
 }
 
+attachManifest();
+registerPwa();
 restoreSession();
