@@ -5,6 +5,7 @@ A browser-based media vault for authenticated users to upload files, organize th
 ## Features
 
 - Sign up, log in, and log out with local PBKDF2 password hashing.
+- Optionally enable Sign in with Google by adding a Google OAuth web client ID.
 - Keep each user's metadata and uploaded file blobs scoped to that user's account.
 - Create, rename, and delete folders and files.
 - Browse a clear folder hierarchy with a tree view and breadcrumbs.
@@ -29,6 +30,30 @@ npm start
 ```
 
 Then open the local Parcel URL, usually `http://localhost:1234`. After signing in, the top dashboard shows storage, library totals, AI cleanup count, media mix bars, recent activity, and local health checks.
+
+## Enable Google auth
+
+Create a Google OAuth 2.0 **Web application** client ID in Google Cloud Console, add `http://localhost:1234` as an authorized JavaScript origin for preview, then configure the app with:
+
+```bash
+cp .env.example .env
+# edit .env and set GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+npm start
+```
+
+See `docs/GOOGLE_AUTH.md` for the full setup and security notes.
+
+## Download this app
+
+Use these commands to generate downloadable packages:
+
+```bash
+npm run package:pc       # creates release/cloudbox-media-vault-pc.zip
+npm run package:npm      # creates release/cloudbox-media-vault-1.0.0.tgz
+APP_URL=https://your-real-domain.com npm run package:android
+```
+
+The Android command creates a Trusted Web Activity source ZIP. Building a final signed APK requires Android SDK/Bubblewrap, a signing key, and your deployed HTTPS app URL.
 
 ## Production build
 

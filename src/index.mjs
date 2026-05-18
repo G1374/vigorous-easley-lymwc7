@@ -7,6 +7,8 @@ const DB_VERSION = 2;
 const FILE_STORE = "files";
 const VIDEO_TYPES = ["mp4", "webm", "ogg", "mov", "m4v", "mkv", "avi"];
 const AUDIO_TYPES = ["mp3", "wav", "ogg", "m4a", "flac", "aac"];
+const GOOGLE_CLIENT_ID = typeof process !== "undefined" ? process.env.GOOGLE_CLIENT_ID || "" : "";
+const GOOGLE_SCRIPT_URL = "https://accounts.google.com/gsi/client";
 
 const state = {
   user: null,
@@ -15,6 +17,7 @@ const state = {
   selectedItemId: null,
   authMode: "login",
   authError: "",
+  googleAuthStatus: "",
   aiPrompt: "",
   aiResponse: "Ask the Vault AI to summarize files, search your library, build cleanup plans, create media queues, find duplicates, suggest folders, or organize media automatically.",
   installPrompt: null,
@@ -22,6 +25,25 @@ const state = {
 };
 
 const app = document.getElementById("app");
+
+function googleClientId() {
+  return (
+    GOOGLE_CLIENT_ID ||
+    window.CLOUDBOX_GOOGLE_CLIENT_ID ||
+    document.querySelector('meta[name="google-client-id"]')?.content ||
+    ""
+  ).trim();
+}
+
+function decodeJwtPayload(token) {
+  const payload = token.split(".")[1];
+  if (!payload) return null;
+
+  const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = `${normalized}${"=".repeat((4 - (normalized.length % 4)) % 4)}`;
+  const bytes = Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
 
 function metadataKey(userId = state.user?.id) {
   return `cloudbox.media.vault.items.v2.${userId}`;
@@ -782,6 +804,11 @@ function renderAuth() {
           ${state.authError ? `<div class="form-error">${escapeHtml(state.authError)}</div>` : ""}
           <button type="submit">${isSignup ? "Sign up" : "Log in"}</button>
         </form>
+        <div class="auth-divider"><span>or</span></div>
+        <section class="google-auth-card" aria-label="Google sign-in">
+          <div id="googleSignInButton"></div>
+          <small id="googleAuthStatus">${escapeHtml(state.googleAuthStatus || "Google sign-in is optional and needs a Google OAuth web client ID.")}</small>
+        </section>
         <button id="toggleAuth" class="text-button" type="button">
           ${isSignup ? "Already have an account? Log in" : "Need an account? Sign up"}
         </button>
@@ -791,6 +818,7 @@ function renderAuth() {
   `;
 
   bindAuthEvents();
+  initGoogleAuth();
 }
 
 function renderApp() {
@@ -941,7 +969,7 @@ async function logIn(form) {
   const users = loadUsers();
   const email = form.email.value.trim().toLowerCase();
   const password = form.password.value;
-  const user = users.find((entry) => entry.email === email);
+  const user = users.find((entry) => entry.email === email && entry.passwordHash);
 
   if (!user || !(await verifyPassword(password, user))) {
     state.authError = "Invalid email or password.";
@@ -951,6 +979,98 @@ async function logIn(form) {
 
   sessionStorage.setItem(SESSION_KEY, user.id);
   await loadUserSession(user);
+}
+
+function loadGoogleScript() {
+  if (window.google?.accounts?.id) return Promise.resolve();
+
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${GOOGLE_SCRIPT_URL}"]`);
+    if (existing) {
+      existing.addEventListener("load", resolve, { once: true });
+      existing.addEventListener("error", reject, { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = GOOGLE_SCRIPT_URL;
+    script.async = true;
+    script.defer = true;
+    script.addEventListener("load", resolve, { once: true });
+    script.addEventListener("error", reject, { once: true });
+    document.head.appendChild(script);
+  });
+}
+
+async function handleGoogleCredential(response) {
+  const profile = decodeJwtPayload(response.credential || "");
+  if (!profile?.sub || !profile?.email) {
+    state.googleAuthStatus = "Google did not return a usable profile. Try again or use email login.";
+    renderAuth();
+    return;
+  }
+
+  const users = loadUsers();
+  let user = users.find((entry) => entry.googleSub === profile.sub) || users.find((entry) => entry.email === profile.email.toLowerCase());
+
+  if (user) {
+    user.googleSub = profile.sub;
+    user.provider = user.provider || "google";
+    user.displayName = user.displayName || profile.name || profile.email.split("@")[0];
+    user.picture = profile.picture || user.picture;
+    user.updatedAt = new Date().toISOString();
+  } else {
+    user = {
+      id: `google:${profile.sub}`,
+      provider: "google",
+      googleSub: profile.sub,
+      email: profile.email.toLowerCase(),
+      displayName: profile.name || profile.email.split("@")[0],
+      picture: profile.picture || "",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    users.push(user);
+  }
+
+  saveUsers(users);
+  sessionStorage.setItem(SESSION_KEY, user.id);
+  state.googleAuthStatus = "Signed in with Google.";
+  await loadUserSession(user);
+}
+
+async function initGoogleAuth() {
+  const clientId = googleClientId();
+  const buttonHost = document.getElementById("googleSignInButton");
+  if (!buttonHost) return;
+
+  if (!clientId) {
+    state.googleAuthStatus = "Add GOOGLE_CLIENT_ID to enable Google sign-in.";
+    buttonHost.innerHTML = `<button class="google-disabled" type="button" disabled>Configure Google Client ID</button>`;
+    document.getElementById("googleAuthStatus").textContent = state.googleAuthStatus;
+    return;
+  }
+
+  state.googleAuthStatus = "Loading Google sign-in...";
+  document.getElementById("googleAuthStatus").textContent = state.googleAuthStatus;
+
+  try {
+    await loadGoogleScript();
+    window.google.accounts.id.initialize({
+      client_id: clientId,
+      callback: handleGoogleCredential,
+      auto_select: false,
+      context: state.authMode === "signup" ? "signup" : "signin",
+    });
+    buttonHost.innerHTML = "";
+    window.google.accounts.id.renderButton(buttonHost, { theme: "outline", size: "large", type: "standard", width: 320 });
+    state.googleAuthStatus = "Google sign-in is ready.";
+  } catch (error) {
+    state.googleAuthStatus = "Google sign-in could not load. Check your network and Client ID.";
+  }
+
+  const status = document.getElementById("googleAuthStatus");
+  if (status) status.textContent = state.googleAuthStatus;
 }
 
 async function loadUserSession(user) {

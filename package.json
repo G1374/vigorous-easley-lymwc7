@@ -4,7 +4,7 @@
   "description": "Installable CloudBox Media Vault PWA with local storage, media playback, and AI organization tools",
   "scripts": {
     "start": "parcel ./src/index.html",
-    "build": "parcel build ./src/index.html",
+    "build": "node scripts/clean-dist.mjs && parcel build ./src/index.html",
     "package:pc": "npm run build && node scripts/package-pc.mjs",
     "package:android": "npm run build && node scripts/package-android-twa.mjs",
     "package:all": "npm run package:pc && npm run package:android && npm run package:npm",
@@ -28,7 +28,8 @@
     "src",
     "docs",
     "scripts",
-    "README.md"
+    "README.md",
+    ".env.example"
   ],
   "license": "MIT"
 }
