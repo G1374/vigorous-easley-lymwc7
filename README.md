@@ -48,7 +48,7 @@ See `docs/GOOGLE_AUTH.md` for the full setup and security notes.
 Use these commands to generate downloadable packages:
 
 ```bash
-npm run package:pc       # creates release/cloudbox-media-vault-pc.zip
+npm run package:pc       # creates release/cloudbox-media-vault-pc-website.zip
 npm run package:npm      # creates release/cloudbox-media-vault-1.0.0.tgz
 APP_URL=https://your-real-domain.com npm run package:android
 ```
@@ -84,11 +84,21 @@ npm install ./release/cloudbox-media-vault-1.0.0.tgz
 
 The npm tarball includes the built `dist/` app plus source, docs, and packaging scripts.
 
+## PC website version
+
+Generate a desktop-friendly website package for Windows, macOS, or Linux with:
+
+```bash
+npm run package:pc
+```
+
+This creates `release/cloudbox-media-vault-pc-website.zip`. Extract it, run the included launcher script, then open `http://localhost:4173` in Chrome or Edge. See `docs/PC_WEBSITE.md` for step-by-step PC instructions.
+
 ## Android and PC download options
 
 - Android PWA: open the app in Chrome and use **Install app** or **Add to Home screen**.
 - PC PWA: open the app in Chrome or Edge and use **Install app** or **Create shortcut**.
-- PC ZIP package: run `npm run package:pc` to create `release/cloudbox-media-vault-pc.zip`.
+- PC website ZIP package: run `npm run package:pc` to create `release/cloudbox-media-vault-pc-website.zip`; extract it and run `start-cloudbox-windows.bat` on Windows or `start-cloudbox-mac-linux.sh` on macOS/Linux.
 - Android APK source package: run `APP_URL=https://your-real-domain.com npm run package:android` to create `release/cloudbox-media-vault-android-twa.zip`, then build the final APK with Android SDK + Bubblewrap.
 - The in-app **Download manifest** button exports the generated PWA manifest for packaging experiments.
 

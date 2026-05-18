@@ -20,14 +20,17 @@ npm run package:pc
 This creates:
 
 ```text
-release/cloudbox-media-vault-pc.zip
+release/cloudbox-media-vault-pc-website.zip
 ```
 
 Use it in one of these ways:
 
-1. Extract the ZIP and serve it with any static web server.
-2. Deploy the extracted files to a website.
-3. Open the deployed app in Chrome or Edge and choose **Install app** or **Create shortcut**.
+1. Extract the ZIP.
+2. Run `start-cloudbox-windows.bat` on Windows or `start-cloudbox-mac-linux.sh` on macOS/Linux.
+3. Open `http://localhost:4173` in Chrome or Edge.
+4. Optional: choose **Install app** or **Create shortcut** for a PC desktop icon.
+
+The deployable static files live in the extracted `app/` folder.
 
 
 ## Create an NPM download package

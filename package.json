@@ -8,7 +8,8 @@
     "package:pc": "npm run build && node scripts/package-pc.mjs",
     "package:android": "npm run build && node scripts/package-android-twa.mjs",
     "package:all": "npm run package:pc && npm run package:android && npm run package:npm",
-    "package:npm": "npm run build && node scripts/package-npm.mjs"
+    "package:npm": "npm run build && node scripts/package-npm.mjs",
+    "package:website:pc": "npm run package:pc"
   },
   "devDependencies": {
     "parcel": "^2.0.0",
@@ -21,7 +22,8 @@
     "media",
     "vault",
     "android",
-    "desktop"
+    "desktop",
+    "website"
   ],
   "files": [
     "dist",
