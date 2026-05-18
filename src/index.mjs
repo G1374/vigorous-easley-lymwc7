@@ -16,7 +16,7 @@ const state = {
   authMode: "login",
   authError: "",
   aiPrompt: "",
-  aiResponse: "Ask the Vault AI to summarize files, find duplicates, suggest folders, or organize media automatically.",
+  aiResponse: "Ask the Vault AI to summarize files, search your library, build cleanup plans, create media queues, find duplicates, suggest folders, or organize media automatically.",
   installPrompt: null,
   installStatus: "Install on Android or PC from this button when your browser supports it.",
 };
@@ -258,6 +258,134 @@ function buildAiInsights() {
   return { files, videos, songs, docs, largest, duplicates, uncategorized, folderSuggestions };
 }
 
+function percentage(part, total) {
+  return total ? Math.round((part / total) * 100) : 0;
+}
+
+function sortedByUpdated(items = state.items) {
+  return [...items].sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+}
+
+function extensionGroups() {
+  const groups = new Map();
+  filesOnly().forEach((item) => {
+    const label = (item.extension || "unknown").toUpperCase();
+    const current = groups.get(label) || { label, count: 0, size: 0 };
+    current.count += 1;
+    current.size += item.size || 0;
+    groups.set(label, current);
+  });
+
+  return [...groups.values()].sort((a, b) => b.size - a.size);
+}
+
+function filesMissingBlobs() {
+  return filesOnly().filter((item) => !item.objectUrl);
+}
+
+function oldLargeFiles() {
+  const thirtyDaysAgo = Date.now() - 1000 * 60 * 60 * 24 * 30;
+  return filesOnly()
+    .filter((item) => (item.size || 0) > 50 * 1024 * 1024 && new Date(item.updatedAt || item.createdAt || 0).getTime() < thirtyDaysAgo)
+    .sort((a, b) => b.size - a.size)
+    .slice(0, 5);
+}
+
+function buildDashboardStats() {
+  const insights = buildAiInsights();
+  const files = insights.files.length;
+  const storage = totalStoredBytes();
+  const largestType = extensionGroups()[0];
+  const recent = sortedByUpdated(state.items).slice(0, 5);
+  const healthIssues = [
+    insights.duplicates.length ? `${insights.duplicates.length} duplicate group(s)` : "No duplicate groups",
+    filesMissingBlobs().length ? `${filesMissingBlobs().length} file(s) need re-upload` : "All loaded files are playable/downloadable",
+    insights.uncategorized.length ? `${insights.uncategorized.length} root file(s) can be organized` : "Root folder is organized",
+  ];
+
+  return {
+    ...insights,
+    files,
+    storage,
+    folders: foldersOnly().length,
+    videoPercent: percentage(insights.videos.length, files),
+    audioPercent: percentage(insights.songs.length, files),
+    documentPercent: percentage(insights.docs.length, files),
+    largestType,
+    recent,
+    healthIssues,
+  };
+}
+
+function renderTypeBar(label, value, emoji) {
+  return `
+    <div class="type-bar">
+      <span>${emoji} ${escapeHtml(label)}</span>
+      <strong>${value}%</strong>
+      <i style="--value: ${value}%"></i>
+    </div>
+  `;
+}
+
+function renderDashboard() {
+  const stats = buildDashboardStats();
+  const recentItems = stats.recent.length
+    ? stats.recent.map((item) => `<li><span>${iconFor(item)}</span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(folderName(item.parentId))}</small></li>`).join("")
+    : `<li><span>✨</span><strong>No uploads yet</strong><small>Upload files to fill the dashboard.</small></li>`;
+  const largestType = stats.largestType ? `${stats.largestType.label} · ${formatBytes(stats.largestType.size)}` : "No file types yet";
+
+  return `
+    <section class="dashboard-panel" aria-label="AI dashboard overview">
+      <div class="dashboard-header">
+        <div>
+          <p class="eyebrow">Command dashboard</p>
+          <h2>Your vault cockpit</h2>
+          <p>Live overview of storage, media mix, recent activity, and AI health checks for this signed-in account.</p>
+        </div>
+        <div class="dashboard-score">
+          <span>AI health</span>
+          <strong>${Math.max(0, 100 - stats.duplicates.length * 10 - filesMissingBlobs().length * 20 - stats.uncategorized.length * 2)}%</strong>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <article class="dashboard-card storage-card">
+          <span>Storage used</span>
+          <strong>${formatBytes(stats.storage)}</strong>
+          <small>Largest type: ${escapeHtml(largestType)}</small>
+        </article>
+        <article class="dashboard-card">
+          <span>Library</span>
+          <strong>${stats.files}</strong>
+          <small>${stats.folders} folders · ${stats.videos.length} movies · ${stats.songs.length} songs</small>
+        </article>
+        <article class="dashboard-card">
+          <span>AI cleanup</span>
+          <strong>${stats.duplicates.length + filesMissingBlobs().length + stats.uncategorized.length}</strong>
+          <small>Actionable suggestions ready</small>
+        </article>
+      </div>
+
+      <div class="dashboard-lower">
+        <div class="media-mix">
+          <h3>Media mix</h3>
+          ${renderTypeBar("Movies", stats.videoPercent, "🎬")}
+          ${renderTypeBar("Music", stats.audioPercent, "🎵")}
+          ${renderTypeBar("Files", stats.documentPercent, "📄")}
+        </div>
+        <div class="activity-feed">
+          <h3>Recent activity</h3>
+          <ul>${recentItems}</ul>
+        </div>
+        <div class="ai-health">
+          <h3>AI health scan</h3>
+          <ul>${stats.healthIssues.map((issue) => `<li>${escapeHtml(issue)}</li>`).join("")}</ul>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
 function renderAiInsights() {
   const insights = buildAiInsights();
   const largest = insights.largest.length
@@ -290,6 +418,10 @@ function renderAiInsights() {
         <button id="organizeButton" type="button">AI organize files</button>
         <button id="suggestFoldersButton" type="button">Create suggested folders</button>
         <button id="exportVaultButton" type="button">Download vault index</button>
+        <button id="smartSummaryButton" type="button">AI smart summary</button>
+        <button id="cleanupPlanButton" type="button">AI cleanup plan</button>
+        <button id="mediaQueueButton" type="button">AI media queue</button>
+        <button id="securityScanButton" type="button">AI security scan</button>
       </div>
       <div class="ai-answer">
         <strong>${escapeHtml(state.aiResponse)}</strong>
@@ -303,7 +435,7 @@ function answerVaultQuestion(prompt) {
   const query = prompt.toLowerCase();
   const insights = buildAiInsights();
 
-  if (!prompt.trim()) return "Try asking about duplicates, movies, songs, large files, folders, or storage.";
+  if (!prompt.trim()) return "Try asking about duplicates, movies, songs, large files, folders, storage, search terms, security, cleanup, or playlists.";
   if (query.includes("duplicate")) {
     if (!insights.duplicates.length) return "I found no obvious duplicates by matching file name and size.";
     return `Possible duplicates: ${insights.duplicates.map((group) => group.map((item) => item.name).join(" / ")).join("; ")}.`;
@@ -320,8 +452,60 @@ function answerVaultQuestion(prompt) {
   if (query.includes("folder") || query.includes("organize")) {
     return insights.folderSuggestions.length ? `I suggest folders: ${insights.folderSuggestions.join(", ")}. Use AI organize files to move root files automatically.` : "Your root folder is already organized or empty.";
   }
+  if (query.includes("cleanup") || query.includes("clean")) return cleanupPlanText();
+  if (query.includes("playlist") || query.includes("queue") || query.includes("watch")) return mediaQueueText();
+  if (query.includes("security") || query.includes("safe") || query.includes("privacy")) return securityScanText();
+
+  const matches = filesOnly().filter((item) => item.name.toLowerCase().includes(query) || folderName(item.parentId).toLowerCase().includes(query) || (item.extension || "").toLowerCase().includes(query)).slice(0, 8);
+  if (matches.length) return `Smart search found: ${matches.map((item) => `${item.name} in ${folderName(item.parentId)}`).join(", ")}.`;
 
   return `Vault summary: ${insights.files.length} files, ${foldersOnly().length} folders, ${formatBytes(totalStoredBytes())} used. Ask about duplicates, movies, songs, folders, or storage for more detail.`;
+}
+
+function cleanupPlanText() {
+  const duplicates = duplicateGroups();
+  const missing = filesMissingBlobs();
+  const oldLarge = oldLargeFiles();
+  const uncategorized = buildAiInsights().uncategorized;
+  const steps = [];
+
+  if (duplicates.length) steps.push(`Review ${duplicates.length} possible duplicate group(s) before deleting copies.`);
+  if (oldLarge.length) steps.push(`Archive or compress large older files: ${oldLarge.map((item) => item.name).join(", ")}.`);
+  if (uncategorized.length) steps.push(`Run AI organize to move ${uncategorized.length} root file(s) into smart folders.`);
+  if (missing.length) steps.push(`Re-upload ${missing.length} file(s) whose blobs are unavailable in this browser.`);
+
+  return steps.length ? `Cleanup plan: ${steps.join(" ")}` : "Cleanup plan: your vault looks tidy. No duplicates, missing blobs, or root files need attention.";
+}
+
+function mediaQueueText() {
+  const videos = buildAiInsights().videos.slice(0, 5);
+  const songs = buildAiInsights().songs.slice(0, 8);
+  const parts = [];
+  if (videos.length) parts.push(`Movie queue: ${videos.map((item) => item.name).join(" → ")}`);
+  if (songs.length) parts.push(`Music queue: ${songs.map((item) => item.name).join(" → ")}`);
+  return parts.length ? parts.join(". ") : "Upload movies or songs and I will build a watch/listen queue.";
+}
+
+function securityScanText() {
+  const missing = filesMissingBlobs();
+  const extensionSummary = extensionGroups().slice(0, 5).map((group) => `${group.label}: ${group.count}`).join(", ") || "none";
+  const notes = [
+    "Account data is scoped to the signed-in local user and passwords are PBKDF2-hashed before local storage.",
+    missing.length ? `${missing.length} metadata record(s) are missing browser file bytes and should be re-uploaded.` : "All loaded file records have browser blobs available for playback/download.",
+    `Top extensions scanned: ${extensionSummary}.`,
+  ];
+  return `Security scan: ${notes.join(" ")}`;
+}
+
+function smartSummaryText() {
+  const stats = buildDashboardStats();
+  const largest = stats.largest.map((item) => `${item.name} (${formatBytes(item.size)})`).join(", ") || "none";
+  return `Smart summary: ${stats.files} files across ${stats.folders} folders using ${formatBytes(stats.storage)}. Media mix is ${stats.videos.length} movies, ${stats.songs.length} songs, and ${stats.docs.length} other files. Largest files: ${largest}.`;
+}
+
+function setAiResponse(response) {
+  state.aiResponse = response;
+  renderApp();
 }
 
 function createFolderForName(name) {
@@ -632,6 +816,8 @@ function renderApp() {
         </div>
       </section>
 
+      ${renderDashboard()}
+
       <section class="toolbar" aria-label="Upload and folder actions">
         <label class="upload-zone" for="fileUpload">
           <input id="fileUpload" type="file" multiple />
@@ -827,6 +1013,10 @@ function bindAppEvents() {
   document.getElementById("organizeButton").addEventListener("click", organizeFilesWithAi);
   document.getElementById("suggestFoldersButton").addEventListener("click", createSuggestedFolders);
   document.getElementById("exportVaultButton").addEventListener("click", downloadVaultIndex);
+  document.getElementById("smartSummaryButton").addEventListener("click", () => setAiResponse(smartSummaryText()));
+  document.getElementById("cleanupPlanButton").addEventListener("click", () => setAiResponse(cleanupPlanText()));
+  document.getElementById("mediaQueueButton").addEventListener("click", () => setAiResponse(mediaQueueText()));
+  document.getElementById("securityScanButton").addEventListener("click", () => setAiResponse(securityScanText()));
   document.getElementById("installAppButton").addEventListener("click", installApp);
   document.getElementById("downloadManifestButton").addEventListener("click", downloadManifest);
 

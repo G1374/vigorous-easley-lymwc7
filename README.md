@@ -10,7 +10,8 @@ A browser-based media vault for authenticated users to upload files, organize th
 - Browse a clear folder hierarchy with a tree view and breadcrumbs.
 - Upload multiple files into the currently selected folder with the file picker or drag-and-drop.
 - Download uploaded files from their folder row or preview panel.
-- Use the Vault AI Assistant to summarize files, find possible duplicates, list movies/songs, detect large files, suggest folders, create folders, and auto-organize root files by type.
+- Use the dashboard cockpit to monitor storage, media mix, recent activity, and AI health for the signed-in account.
+- Use the Vault AI Assistant to summarize files, smart-search names/folders/extensions, find possible duplicates, list movies/songs, detect large files, generate cleanup plans, build watch/listen queues, run local security scans, suggest folders, create folders, and auto-organize root files by type.
 - Stream common movie formats such as MP4, WEBM, MOV, MKV, and AVI when the browser supports the codec.
 - Play common song formats such as MP3, AAC, FLAC, WAV, OGG, and M4A when the browser supports the codec.
 - Use built-in media controls for play/pause, seek, and volume.
@@ -27,7 +28,7 @@ npm install
 npm start
 ```
 
-Then open the local Parcel URL, usually `http://localhost:1234`.
+Then open the local Parcel URL, usually `http://localhost:1234`. After signing in, the top dashboard shows storage, library totals, AI cleanup count, media mix bars, recent activity, and local health checks.
 
 ## Production build
 
