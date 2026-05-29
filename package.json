@@ -1,15 +1,25 @@
 {
   "name": "javascript",
   "version": "1.0.0",
-  "description": "The JavaScript template",
+  "description": "CloudBox Media Vault PWA",
   "scripts": {
     "start": "parcel ./src/index.html",
-    "build": "parcel build ./src/index.html"
+    "build": "parcel build ./src/index.html",
+    "package:pc": "npm run build && node scripts/package-pc.mjs",
+    "package:android": "npm run build && node scripts/package-android-twa.mjs",
+    "package:all": "npm run package:pc && npm run package:android"
   },
   "devDependencies": {
     "parcel": "^2.0.0",
     "babel-eslint": "^10.1.0",
     "eslint": "^7.2.0"
   },
-  "keywords": ["css", "javascript"]
+  "keywords": [
+    "pwa",
+    "storage",
+    "media",
+    "vault",
+    "android",
+    "desktop"
+  ]
 }
