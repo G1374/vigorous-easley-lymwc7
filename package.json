@@ -1,15 +1,14 @@
 {
-  "name": "javascript",
+  "name": "world-room",
   "version": "1.0.0",
-  "description": "The JavaScript template",
+  "description": "Voice-first worldbuilding companion powered by OpenAI Realtime WebRTC.",
+  "type": "module",
   "scripts": {
-    "start": "parcel ./src/index.html",
-    "build": "parcel build ./src/index.html"
+    "dev": "node server.mjs",
+    "start": "NODE_ENV=production node server.mjs",
+    "build": "node --check server.mjs && node --check src/index.mjs",
+    "check": "npm run build"
   },
-  "devDependencies": {
-    "parcel": "^2.0.0",
-    "babel-eslint": "^10.1.0",
-    "eslint": "^7.2.0"
-  },
-  "keywords": ["css", "javascript"]
+  "keywords": ["openai", "realtime", "webrtc", "voice", "worldbuilding"],
+  "engines": { "node": ">=20" }
 }
