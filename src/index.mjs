@@ -18,6 +18,7 @@ const state = {
   authMode: "login",
   authError: "",
   googleAuthStatus: "",
+  previewMode: false,
   aiPrompt: "",
   aiResponse: "Ask the Vault AI to summarize files, search your library, build cleanup plans, create media queues, find duplicates, suggest folders, or organize media automatically.",
   installPrompt: null,
@@ -77,7 +78,7 @@ function loadItems() {
 }
 
 function saveItems() {
-  if (!state.user) return;
+  if (!state.user || state.previewMode) return;
   const serializable = state.items.map(({ file, objectUrl, ...item }) => item);
   saveJson(metadataKey(), serializable);
 }
@@ -302,6 +303,7 @@ function extensionGroups() {
 }
 
 function filesMissingBlobs() {
+  if (state.previewMode) return [];
   return filesOnly().filter((item) => !item.objectUrl);
 }
 
@@ -347,6 +349,59 @@ function renderTypeBar(label, value, emoji) {
       <i style="--value: ${value}%"></i>
     </div>
   `;
+}
+
+function daysAgo(days) {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function demoItem(overrides) {
+  return {
+    id: crypto.randomUUID(),
+    ownerId: "preview-user",
+    createdAt: daysAgo(8),
+    updatedAt: daysAgo(2),
+    size: 0,
+    mime: "application/octet-stream",
+    extension: "",
+    parentId: "root",
+    ...overrides,
+  };
+}
+
+function createDashboardPreviewItems() {
+  const movies = demoItem({ id: "preview-movies", type: "folder", name: "Movies", parentId: "root", mime: "", updatedAt: daysAgo(1) });
+  const music = demoItem({ id: "preview-music", type: "folder", name: "Music", parentId: "root", mime: "", updatedAt: daysAgo(2) });
+  const docs = demoItem({ id: "preview-docs", type: "folder", name: "Documents", parentId: "root", mime: "", updatedAt: daysAgo(3) });
+
+  return [
+    movies,
+    music,
+    docs,
+    demoItem({ type: "video", name: "Family Movie Night.mp4", parentId: movies.id, size: 1_950_000_000, mime: "video/mp4", extension: "mp4", updatedAt: daysAgo(1) }),
+    demoItem({ type: "video", name: "Travel Highlights.mkv", parentId: movies.id, size: 2_840_000_000, mime: "video/x-matroska", extension: "mkv", updatedAt: daysAgo(5) }),
+    demoItem({ type: "audio", name: "Morning Playlist.mp3", parentId: music.id, size: 8_400_000, mime: "audio/mpeg", extension: "mp3", updatedAt: daysAgo(2) }),
+    demoItem({ type: "audio", name: "Focus Beats.flac", parentId: music.id, size: 46_000_000, mime: "audio/flac", extension: "flac", updatedAt: daysAgo(4) }),
+    demoItem({ type: "file", name: "Cloud Storage Plan.pdf", parentId: docs.id, size: 4_200_000, mime: "application/pdf", extension: "pdf", updatedAt: daysAgo(6) }),
+    demoItem({ type: "file", name: "Tax Backup.zip", parentId: "root", size: 720_000_000, mime: "application/zip", extension: "zip", updatedAt: daysAgo(40) }),
+    demoItem({ type: "video", name: "Family Movie Night.mp4", parentId: "root", size: 1_950_000_000, mime: "video/mp4", extension: "mp4", updatedAt: daysAgo(9) }),
+  ];
+}
+
+function openDashboardPreview() {
+  revokeObjectUrls();
+  state.previewMode = true;
+  state.user = {
+    id: "preview-user",
+    email: "preview@cloudbox.local",
+    displayName: "Dashboard Preview",
+  };
+  state.items = createDashboardPreviewItems();
+  state.currentFolderId = "root";
+  state.selectedItemId = null;
+  state.aiPrompt = "";
+  state.aiResponse = "Preview mode is using sample movies, songs, files, duplicates, and cleanup suggestions so you can see the dashboard before uploading anything.";
+  renderApp();
 }
 
 function renderDashboard() {
@@ -809,6 +864,11 @@ function renderAuth() {
           <div id="googleSignInButton"></div>
           <small id="googleAuthStatus">${escapeHtml(state.googleAuthStatus || "Google sign-in is optional and needs a Google OAuth web client ID.")}</small>
         </section>
+        <section class="preview-auth-card" aria-label="Dashboard preview">
+          <strong>Want to see the dashboard first?</strong>
+          <p>Open a no-login preview with sample movies, songs, files, AI health, media mix, and cleanup cards.</p>
+          <button id="previewDashboardButton" type="button">Open dashboard preview</button>
+        </section>
         <button id="toggleAuth" class="text-button" type="button">
           ${isSignup ? "Already have an account? Log in" : "Need an account? Sign up"}
         </button>
@@ -834,16 +894,17 @@ function renderApp() {
         <div>
           <p class="eyebrow">Private browser storage</p>
           <h1>CloudBox Media Vault</h1>
-          <p class="hero-copy">Upload movies, songs, and documents into user-protected folders, then stream or download them from your vault.</p>
+          <p class="hero-copy">${state.previewMode ? "Preview the dashboard with sample media, storage stats, AI cleanup, and folder hierarchy before creating your vault." : "Upload movies, songs, and documents into user-protected folders, then stream or download them from your vault."}</p>
         </div>
         <div class="account-card">
-          <span>Signed in as</span>
+          <span>${state.previewMode ? "Previewing as" : "Signed in as"}</span>
           <strong>${escapeHtml(state.user.displayName || state.user.email)}</strong>
           <small>${escapeHtml(state.user.email)}</small>
-          <button id="logoutButton" type="button">Log out</button>
+          <button id="logoutButton" type="button">${state.previewMode ? "Exit preview" : "Log out"}</button>
         </div>
       </section>
 
+      ${state.previewMode ? `<section class="preview-banner"><strong>Dashboard preview mode</strong><span>Sample data only. Create an account to upload and save real files.</span></section>` : ""}
       ${renderDashboard()}
 
       <section class="toolbar" aria-label="Upload and folder actions">
@@ -1080,6 +1141,7 @@ async function loadUserSession(user) {
   state.currentFolderId = "root";
   state.selectedItemId = null;
   state.authError = "";
+  state.previewMode = false;
   await hydrateStoredFiles();
   render();
 }
@@ -1087,6 +1149,7 @@ async function loadUserSession(user) {
 function logOut() {
   revokeObjectUrls();
   sessionStorage.removeItem(SESSION_KEY);
+  state.previewMode = false;
   state.user = null;
   state.items = [];
   state.currentFolderId = "root";
@@ -1095,6 +1158,8 @@ function logOut() {
 }
 
 function bindAuthEvents() {
+  document.getElementById("previewDashboardButton").addEventListener("click", openDashboardPreview);
+
   document.getElementById("toggleAuth").addEventListener("click", () => {
     state.authMode = state.authMode === "login" ? "signup" : "login";
     state.authError = "";
