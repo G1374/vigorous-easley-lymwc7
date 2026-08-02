@@ -14,6 +14,7 @@ A browser-based media vault for authenticated users to upload files, organize th
 - Preview the dashboard without signing in using sample movies, songs, files, AI health, media mix, and cleanup data.
 - Use the dashboard cockpit to monitor storage, media mix, recent activity, and AI health for the signed-in account.
 - Use the Vault AI Assistant to summarize files, smart-search names/folders/extensions, find possible duplicates, list movies/songs, detect large files, generate cleanup plans, build watch/listen queues, run local security scans, suggest folders, create folders, and auto-organize root files by type.
+- Explore the AI Super Assistant roadmap for voice, vision, agents, computer control, 3D world building, creative studios, smart home, vehicle companion, Life OS, study mode, AR, privacy controls, and Digital Twin planning.
 - Stream common movie formats such as MP4, WEBM, MOV, MKV, and AVI when the browser supports the codec.
 - Play common song formats such as MP3, AAC, FLAC, WAV, OGG, and M4A when the browser supports the codec.
 - Use built-in media controls for play/pause, seek, and volume.
@@ -31,6 +32,16 @@ npm start
 ```
 
 Then open the local Parcel URL, usually `http://localhost:1234`. Click **Open dashboard preview** on the login screen to see a no-login sample dashboard immediately, or sign in to see your own storage, library totals, AI cleanup count, media mix bars, recent activity, and local health checks.
+
+## AI Super Assistant roadmap
+
+The signed-in app and dashboard preview include a futuristic AI Super Assistant section with 20 planned modules:
+
+- AI Brain, human-like voice, AI vision, computer control, 3D World Builder, Dream Builder, Image Studio, Video Studio, Coding Assistant, Internet Agent, Autonomous Agents, Smart Home, Vehicle Companion, Life OS, Study Mode, Gaming Mode, AR/Mixed Reality, Privacy & Security, Beautiful UI, and AI Superpowers.
+- A **Private Digital Twin** concept panel explains consent-based memory, project/workflow modeling, context-aware reminders, and cross-device continuity.
+- A three-version roadmap separates MVP items from automation and future spatial/agent ecosystem features.
+
+These roadmap cards are product-planning UI inside this local PWA; features that require live models, camera/microphone, operating-system control, smart-home devices, or cloud services still need those integrations and user permissions before they can perform real-world actions.
 
 ## Dashboard preview
 

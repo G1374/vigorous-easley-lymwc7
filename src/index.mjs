@@ -10,6 +10,155 @@ const AUDIO_TYPES = ["mp3", "wav", "ogg", "m4a", "flac", "aac"];
 const GOOGLE_CLIENT_ID = typeof process !== "undefined" ? process.env.GOOGLE_CLIENT_ID || "" : "";
 const GOOGLE_SCRIPT_URL = "https://accounts.google.com/gsi/client";
 
+const AI_SUPER_FEATURES = [
+  {
+    icon: "🧠",
+    title: "AI Brain",
+    status: "Roadmap",
+    summary: "Voice conversations, model routing, memory, personality, emotional tone, multilingual answers, fast mode, and deep research mode.",
+    features: ["Natural voice conversations", "GPT/Gemini/Claude/local model routing", "Long-term memory", "Personality customization", "Think-before-answer mode"],
+  },
+  {
+    icon: "🎙️",
+    title: "Human-like Voice",
+    status: "Prototype",
+    summary: "Realtime voice controls with interruptible speech, whisper mode, speed control, translation, and permission-based voice cloning plans.",
+    features: ["Low-latency voice", "Interrupt while speaking", "Breathing and pauses", "Voice speed", "Live translation"],
+  },
+  {
+    icon: "👀",
+    title: "AI Vision",
+    status: "Roadmap",
+    summary: "Camera, screen, handwriting, OCR, object recognition, counting, webcam analysis, and explain-anything-visible workflows.",
+    features: ["Camera understanding", "Screen understanding", "OCR documents", "Object recognition", "Live webcam analysis"],
+  },
+  {
+    icon: "🖥️",
+    title: "Computer Control",
+    status: "Roadmap",
+    summary: "Permission-gated workflows for opening apps, clicking buttons, filling forms, writing emails, organizing files, and multi-monitor support.",
+    features: ["Open apps", "Click buttons", "Fill forms", "Search files", "Execute workflows"],
+  },
+  {
+    icon: "🌍",
+    title: "3D World Builder",
+    status: "Unique",
+    summary: "Prompt-generated cities, connected roads, terrain, NPCs, weather, day/night cycles, buildings, and export targets for Unreal/Unity/Blender.",
+    features: ["Create cities", "Street View navigation", "Weather simulation", "NPC generation", "Export 3D worlds"],
+  },
+  {
+    icon: "🏠",
+    title: "Dream Builder",
+    status: "Concept",
+    summary: "Generate campuses, classrooms, interiors, gardens, budgets, and walkthrough plans from one construction prompt.",
+    features: ["Campus generation", "Interior planning", "Roads and gardens", "Budget estimate", "3D walkthrough"],
+  },
+  {
+    icon: "📷",
+    title: "Instant Image Studio",
+    status: "Roadmap",
+    summary: "Create and voice-edit logos, UI designs, posters, cars, houses, characters, wallpapers, and thumbnails.",
+    features: ["Logos", "UI design", "Posters", "Characters", "Voice edits"],
+  },
+  {
+    icon: "🎬",
+    title: "AI Video Studio",
+    status: "Roadmap",
+    summary: "Generate videos, talking avatars, cinematic scenes, shorts, subtitles, dubbing, and camera movement plans.",
+    features: ["Talking avatars", "Story videos", "Shorts", "Subtitles", "Voice dubbing"],
+  },
+  {
+    icon: "💻",
+    title: "Coding Assistant",
+    status: "Roadmap",
+    summary: "Build apps, fix bugs, explain code, preview changes, help with terminal tasks, GitHub, deployments, APIs, and database design.",
+    features: ["Build apps", "Fix bugs", "Live preview", "Terminal helper", "Generate APIs"],
+  },
+  {
+    icon: "🌐",
+    title: "Internet Agent",
+    status: "Roadmap",
+    summary: "Browse, summarize pages, compare products, research topics, read PDFs, extract tables, and monitor prices with user approval.",
+    features: ["Browse websites", "Summarize pages", "Compare products", "Read PDFs", "Monitor prices"],
+  },
+  {
+    icon: "🤖",
+    title: "Autonomous Agents",
+    status: "Roadmap",
+    summary: "Create cooperating coding, research, designer, finance, marketing, travel, and study coach agents for larger tasks.",
+    features: ["Coding agent", "Research agent", "Designer agent", "Finance agent", "Travel planner"],
+  },
+  {
+    icon: "🏡",
+    title: "Smart Home",
+    status: "Integration",
+    summary: "Permission-based control for lights, fans, AC, TV, cameras, smart locks, sensors, and voice automations.",
+    features: ["Lights", "AC", "TV", "Cameras", "Smart locks"],
+  },
+  {
+    icon: "🚗",
+    title: "Vehicle Companion",
+    status: "Green Torque",
+    summary: "Diagnostics, battery health, route planning, driver monitoring, voice navigation, predictive maintenance, charging, and alerts.",
+    features: ["Diagnostics", "Battery health", "Route planning", "Maintenance", "Charging suggestions"],
+  },
+  {
+    icon: "📅",
+    title: "Life OS",
+    status: "MVP",
+    summary: "Calendar, tasks, notes, reminders, habits, focus timer, goal planner, and daily briefing in one command center.",
+    features: ["Calendar", "Tasks", "Notes", "Habits", "Daily briefing"],
+  },
+  {
+    icon: "📚",
+    title: "Study Mode",
+    status: "MVP",
+    summary: "Explain chapters, solve math, quiz users, create flashcards and mind maps, summarize PDFs, plan exams, and tutor interactively.",
+    features: ["Chapter explainers", "Math solving", "Quiz mode", "Flashcards", "Exam planner"],
+  },
+  {
+    icon: "🎮",
+    title: "Gaming Mode",
+    status: "Roadmap",
+    summary: "AI game coaching, FPS analysis, strategy suggestions, voice controls, and performance optimization.",
+    features: ["Game coach", "FPS analysis", "Strategy", "Voice controls", "Optimization"],
+  },
+  {
+    icon: "🛰️",
+    title: "AR / Mixed Reality",
+    status: "Future",
+    summary: "Contextual AR explanations, sign translation, holographic directions, nearby places, and glasses-ready assistance.",
+    features: ["AR labels", "Sign translation", "Directions", "Context hints", "Holograms"],
+  },
+  {
+    icon: "🔒",
+    title: "Privacy & Security",
+    status: "Foundation",
+    summary: "End-to-end encryption where appropriate, on-device wake word detection, permission controls, biometric login, memory controls, and session history.",
+    features: ["Permission access", "Biometric login", "Privacy dashboard", "Memory controls", "Session history"],
+  },
+  {
+    icon: "🎨",
+    title: "Beautiful UI",
+    status: "Live theme",
+    summary: "Floating AI orb, animated waveform, holographic panels, glassmorphism, dynamic wallpapers, particles, and smooth futuristic motion.",
+    features: ["AI orb", "Waveform", "Glass panels", "Dynamic wallpaper", "Particles"],
+  },
+  {
+    icon: "⚡",
+    title: "AI Superpowers",
+    status: "North star",
+    summary: "Predictive assistance, cross-context understanding, automation suggestions, cross-device continuity, multimodal context, collaboration, and notifications.",
+    features: ["Predict needs", "Context memory", "Automations", "Continuity", "Collaboration"],
+  },
+];
+
+const AI_ROADMAP = [
+  { version: "Version 1", title: "MVP", items: ["Realtime voice (WebRTC)", "Beautiful futuristic UI", "Long-term memory", "Chat + voice", "Document and image understanding", "AI vision", "Tasks and reminders"] },
+  { version: "Version 2", title: "Automation", items: ["Computer control", "Internet agent", "Multiple AI agents", "Smart automations", "Team collaboration"] },
+  { version: "Version 3", title: "Spatial + digital twin", items: ["3D World Builder", "AR support", "Smart home", "Vehicle companion", "Digital Twin", "Advanced agent ecosystem"] },
+];
+
 const state = {
   user: null,
   items: [],
@@ -463,6 +612,86 @@ function renderDashboard() {
   `;
 }
 
+
+function renderFeatureTags(features) {
+  return features.map((feature) => `<span>${escapeHtml(feature)}</span>`).join("");
+}
+
+function renderAiSuperFeature(feature) {
+  return `
+    <article class="super-feature-card">
+      <div class="feature-card-top">
+        <span class="feature-icon">${feature.icon}</span>
+        <span class="feature-status">${escapeHtml(feature.status)}</span>
+      </div>
+      <h3>${escapeHtml(feature.title)}</h3>
+      <p>${escapeHtml(feature.summary)}</p>
+      <div class="feature-tags">${renderFeatureTags(feature.features)}</div>
+    </article>
+  `;
+}
+
+function renderRoadmapStage(stage) {
+  return `
+    <article class="roadmap-stage">
+      <span>${escapeHtml(stage.version)}</span>
+      <h3>${escapeHtml(stage.title)}</h3>
+      <ul>${stage.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+    </article>
+  `;
+}
+
+function renderAiSuperPlatform() {
+  const mvpCount = AI_SUPER_FEATURES.filter((feature) => ["MVP", "Foundation", "Live theme", "Prototype"].includes(feature.status)).length;
+
+  return `
+    <section class="super-platform" aria-label="AI super assistant platform roadmap">
+      <div class="super-hero">
+        <div>
+          <p class="eyebrow">AI Super Assistant</p>
+          <h2>Voice, vision, agents, worlds, and Digital Twin roadmap</h2>
+          <p>CloudBox now includes a product blueprint for a full AI workspace: realtime voice, multimodal vision, autonomous agents, creative studios, Life OS, vehicle companion, and 3D world building. Items are labeled as MVP, prototype, integration, roadmap, or future so users know what is live versus planned.</p>
+        </div>
+        <div class="orb-card" aria-label="AI orb preview">
+          <div class="ai-orb"><span></span></div>
+          <strong>20 modules</strong>
+          <small>${mvpCount} foundation/MVP tracks ready to plan</small>
+        </div>
+      </div>
+
+      <div class="super-controls" aria-label="AI assistant modes">
+        <span>Fast mode</span>
+        <span>Think-before-answer</span>
+        <span>Deep Research</span>
+        <span>Whisper voice</span>
+        <span>Privacy first</span>
+      </div>
+
+      <div class="super-feature-grid">
+        ${AI_SUPER_FEATURES.map(renderAiSuperFeature).join("")}
+      </div>
+
+      <div class="digital-twin-panel">
+        <div>
+          <p class="eyebrow">Signature differentiator</p>
+          <h2>Private Digital Twin</h2>
+          <p>With consent, the assistant can build a private, evolving model of projects, preferences, unfinished work, and workflows. Instead of only answering commands, it can organize context, track progress, suggest automations, and remind you at the right time.</p>
+        </div>
+        <ul>
+          <li>Consent-based long-term memory</li>
+          <li>Project and workflow graph</li>
+          <li>Context-aware reminders</li>
+          <li>Cross-device continuity plan</li>
+        </ul>
+      </div>
+
+      <div class="roadmap-grid">
+        ${AI_ROADMAP.map(renderRoadmapStage).join("")}
+      </div>
+    </section>
+  `;
+}
+
 function renderAiInsights() {
   const insights = buildAiInsights();
   const largest = insights.largest.length
@@ -532,6 +761,7 @@ function answerVaultQuestion(prompt) {
   if (query.includes("cleanup") || query.includes("clean")) return cleanupPlanText();
   if (query.includes("playlist") || query.includes("queue") || query.includes("watch")) return mediaQueueText();
   if (query.includes("security") || query.includes("safe") || query.includes("privacy")) return securityScanText();
+  if (query.includes("voice") || query.includes("vision") || query.includes("agent") || query.includes("world") || query.includes("digital twin") || query.includes("roadmap")) return aiPlatformPlanText();
 
   const matches = filesOnly().filter((item) => item.name.toLowerCase().includes(query) || folderName(item.parentId).toLowerCase().includes(query) || (item.extension || "").toLowerCase().includes(query)).slice(0, 8);
   if (matches.length) return `Smart search found: ${matches.map((item) => `${item.name} in ${folderName(item.parentId)}`).join(", ")}.`;
@@ -572,6 +802,10 @@ function securityScanText() {
     `Top extensions scanned: ${extensionSummary}.`,
   ];
   return `Security scan: ${notes.join(" ")}`;
+}
+
+function aiPlatformPlanText() {
+  return "AI platform plan: Version 1 focuses on realtime voice, futuristic UI, long-term memory, chat + voice, document/image understanding, AI vision, tasks, and reminders. Version 2 adds computer control, internet agents, multi-agent workflows, smart automations, and collaboration. Version 3 adds 3D World Builder, AR, smart home, vehicle companion, Digital Twin, and an advanced agent ecosystem.";
 }
 
 function smartSummaryText() {
@@ -906,6 +1140,7 @@ function renderApp() {
 
       ${state.previewMode ? `<section class="preview-banner"><strong>Dashboard preview mode</strong><span>Sample data only. Create an account to upload and save real files.</span></section>` : ""}
       ${renderDashboard()}
+      ${renderAiSuperPlatform()}
 
       <section class="toolbar" aria-label="Upload and folder actions">
         <label class="upload-zone" for="fileUpload">
